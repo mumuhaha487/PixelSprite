@@ -32,6 +32,104 @@ def _stamp_ghost_anchor(
     canvas.alpha_composite(ghost, (cx - nw // 2, base_y - nh))
 
 
+def _draw_locomotion_skeleton(
+    draw: ImageDraw.ImageDraw,
+    cx: int,
+    base_y: int,
+    sprite_h: int,
+    anim_id: str,
+    idx: int,
+    is_loop_anchor: bool,
+) -> None:
+    """
+    Draw an exact Richard-Williams 8-frame kinematic stick-figure guide with color-coded legs:
+      - YELLOW (#facc15) = NEAR (foreground / Right) leg & boot
+      - CYAN   (#38bdf8) = FAR  (background / Left) leg & boot
+    Guarantees true Left/Right alternation, backward-sliding stance foot, center passing crossover (F3/F7),
+    and opposite arm/sword counter-swing!
+    """
+    # Exact 8-frame gait tables: (hip_lift_ratio, near_knee, near_foot, far_knee, far_foot, sword_dx_ratio)
+    # Coords are (dx_ratio, dy_from_ground_ratio) relative to (cx, base_y), scaled by leg_len.
+    # Ground is dy=0.0; positive dy is UP off the ground; positive dx is FORWARD (right).
+    if anim_id == "walk":
+        table = [
+            # F1 (Contact 1): Near(Y) extended forward heel-strike, Far(C) extended back toe-push; sword back
+            (0.00, ( 0.34, 0.56), ( 0.66, 0.00), (-0.18, 0.52), (-0.64, 0.04), -0.18),
+            # F2 (Down 1): Near(Y) planted absorbing weight slightly forward, Far(C) lifting behind
+            (-0.06,( 0.24, 0.46), ( 0.28, 0.00), (-0.34, 0.50), (-0.68, 0.24), -0.10),
+            # F3 (Passing 1): Near(Y) STRAIGHT VERTICAL planted at x=0; Far(C) knee bent passing through center!
+            (0.04, ( 0.04, 0.54), ( 0.00, 0.00), ( 0.28, 0.52), (-0.06, 0.26),  0.02),
+            # F4 (High/Push 1): Near(Y) slides BACK pushing off toe; Far(C) swings HIGH FORWARD to land!
+            (0.09, (-0.18, 0.54), (-0.48, 0.06), ( 0.44, 0.56), ( 0.56, 0.22),  0.14),
+            # F5 (Contact 2 - EXACT SWAP OF F1!): Far(C) forward heel-strike, Near(Y) back toe-push; sword forward
+            (0.00, (-0.18, 0.52), (-0.64, 0.04), ( 0.34, 0.56), ( 0.66, 0.00),  0.22),
+            # F6 (Down 2 - EXACT SWAP OF F2!): Far(C) planted absorbing weight, Near(Y) lifting behind
+            (-0.06,(-0.34, 0.50), (-0.68, 0.24), ( 0.24, 0.46), ( 0.28, 0.00),  0.14),
+            # F7 (Passing 2 - EXACT SWAP OF F3!): Far(C) STRAIGHT VERTICAL at x=0; Near(Y) crossing forward!
+            (0.04, ( 0.28, 0.52), (-0.06, 0.26), ( 0.04, 0.54), ( 0.00, 0.00),  0.02),
+            # F8 (High/Push 2 - EXACT SWAP OF F4!): Far(C) slides back pushing off; Near(Y) swings forward into F9(=F1)!
+            (0.09, ( 0.44, 0.56), ( 0.56, 0.22), (-0.18, 0.54), (-0.48, 0.06), -0.10),
+        ]
+    else:  # run — athletic forward-leaning sprint with 2 true airborne flight phases (F4, F8)
+        table = [
+            # F1 (R-Strike): Near(Y) landing forward, Far(C) stretched back
+            (-0.02,( 0.42, 0.52), ( 0.72, 0.00), (-0.28, 0.48), (-0.82, 0.22), -0.22),
+            # F2 (R-Absorb): Near(Y) bent directly under torso absorbing load, Far(C) tucked pulling forward
+            (-0.08,( 0.22, 0.44), ( 0.08, 0.00), (-0.12, 0.44), (-0.44, 0.36), -0.08),
+            # F3 (R-Pushoff): Near(Y) driving far back off toe; Far(C) knee driving HIGH forward!
+            (0.06, (-0.26, 0.48), (-0.72, 0.04), ( 0.52, 0.54), ( 0.28, 0.32),  0.12),
+            # F4 (Flight 1): BOTH FEET AIRBORNE! Far(C) reaching far forward, Near(Y) kicked high behind!
+            (0.18, (-0.34, 0.56), (-0.86, 0.38), ( 0.54, 0.58), ( 0.76, 0.22),  0.24),
+            # F5 (L-Strike - SWAP OF F1!): Far(C) landing forward, Near(Y) stretched back
+            (-0.02,(-0.28, 0.48), (-0.82, 0.22), ( 0.42, 0.52), ( 0.72, 0.00),  0.24),
+            # F6 (L-Absorb - SWAP OF F2!): Far(C) bent under torso, Near(Y) tucked pulling forward
+            (-0.08,(-0.12, 0.44), (-0.44, 0.36), ( 0.22, 0.44), ( 0.08, 0.00),  0.10),
+            # F7 (L-Pushoff - SWAP OF F3!): Far(C) pushing far back; Near(Y) knee driving HIGH forward!
+            (0.06, ( 0.52, 0.54), ( 0.28, 0.32), (-0.26, 0.48), (-0.72, 0.04), -0.08),
+            # F8 (Flight 2 - SWAP OF F4!): BOTH FEET AIRBORNE! Near(Y) reaching forward into F9(=F1), Far(C) kicked back!
+            (0.18, ( 0.54, 0.58), ( 0.76, 0.22), (-0.34, 0.56), (-0.86, 0.38), -0.20),
+        ]
+
+    hip_lift, nk, nf, fk, ff, sw_dx = table[idx % 8]
+    leg_len = int(sprite_h * 0.34)
+    hip_y = base_y - leg_len - int(round(hip_lift * leg_len))
+    lean_x = int(sprite_h * (0.08 if anim_id == "run" else 0.02))
+    torso_h = int(sprite_h * 0.28)
+    head_r = int(sprite_h * 0.23)
+    head_cx = cx + lean_x
+    head_cy = hip_y - torso_h - head_r + 4
+
+    def pt(v: tuple[float, float]) -> tuple[int, int]:
+        return (cx + int(round(v[0] * leg_len)), base_y - int(round(v[1] * leg_len)))
+
+    fk_p, ff_p = pt(fk), pt(ff)
+    nk_p, nf_p = pt(nk), pt(nf)
+    hip_p = (cx, hip_y)
+
+    # 1. Draw FAR (background / Left) leg FIRST in CYAN
+    far_c = (56, 189, 248, 220)
+    draw.line([hip_p, fk_p, ff_p], fill=far_c, width=6)
+    draw.ellipse([ff_p[0] - 7, ff_p[1] - 5, ff_p[0] + 10, ff_p[1] + 5], fill=(56, 189, 248, 175), outline=far_c, width=2)
+
+    # 2. Draw Torso & Head contour
+    body_c = (74, 222, 128, 195) if is_loop_anchor else (148, 163, 184, 155)
+    bw = int(head_r * 0.65)
+    draw.rounded_rectangle([head_cx - bw, hip_y - torso_h, head_cx + bw, hip_y + 4], radius=10, outline=body_c, width=2)
+    draw.ellipse([head_cx - head_r, head_cy - head_r, head_cx + head_r, head_cy + head_r], outline=body_c, width=2)
+
+    # 3. Draw NEAR (foreground / Right) leg ON TOP in BRIGHT YELLOW
+    near_c = (250, 204, 21, 245)
+    draw.line([hip_p, nk_p, nf_p], fill=near_c, width=7)
+    draw.ellipse([nf_p[0] - 7, nf_p[1] - 5, nf_p[0] + 11, nf_p[1] + 5], fill=(250, 204, 21, 205), outline=near_c, width=2)
+
+    # 4. Draw counter-swinging sword hand cue (white blade clearly outside torso)
+    sh_p = (head_cx + 4, hip_y - int(torso_h * 0.65))
+    hand_p = (head_cx + int(round(sw_dx * sprite_h * 0.45)) + 22, hip_y - int(torso_h * 0.12))
+    tip_p = (hand_p[0] + 24, hand_p[1] - 18)
+    draw.line([sh_p, hand_p], fill=(244, 114, 182, 170), width=4)
+    draw.line([hand_p, tip_p], fill=(248, 250, 252, 190), width=4)
+
+
 def render_variable_action_guide(anim_spec: dict[str, Any], anchor_img: Image.Image | None = None) -> Image.Image:
     """
     Render a wide-arena grid guide (1536x1024 for combat skills / 1024x1024 for locomotion) with:
@@ -83,14 +181,13 @@ def render_variable_action_guide(anim_spec: dict[str, Any], anchor_img: Image.Im
             draw.line([(x, base_y), (min(ox1 - 6, x + 6), base_y)], fill=(244, 63, 94, 150), width=2)
 
         sprite_h = int(cell_h * sp_ratio)
-        if (is_start or is_ghost) and anchor_img is not None and anim_spec["id"] not in ("walk", "run"):
+        if anim_spec["id"] in ("walk", "run"):
+            _draw_locomotion_skeleton(draw, cx, base_y, sprite_h, anim_spec["id"], idx, is_start or is_ghost)
+        elif (is_start or is_ghost) and anchor_img is not None:
             _stamp_ghost_anchor(img, anchor_img, cx, base_y, sprite_h, alpha_scale=0.46)
         else:
             lift = 0
-            if anim_spec["id"] in ("walk", "run"):
-                phase = (idx % 8) / 8.0
-                lift = int(abs(math.sin(phase * math.pi * 2)) * (14 if anim_spec["id"] == "run" else 7))
-            elif vfx == "mega_ultimate" and 3 <= idx <= 9:
+            if vfx == "mega_ultimate" and 3 <= idx <= 9:
                 lift = int(math.sin(((idx - 2.5) / 7.5) * math.pi) * (cell_h * 0.23))
 
             head_r = int(sprite_h * 0.25)

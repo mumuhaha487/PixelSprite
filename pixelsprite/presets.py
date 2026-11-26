@@ -18,9 +18,8 @@ PIXEL_STYLES: dict[str, dict[str, Any]] = {
             "authentic crisp 16-bit GBA / NeoGeo / Dead Cells indie action-RPG chibi pixel art, "
             "chunky low-resolution pixel grid (character ~34 logical pixels tall), cute 2-head chibi proportions "
             "with large expressive head and compact limbs, crisp 1-pixel dark purplish-brown outline (#261a2b) on character, "
-            "clean flat 2-step cel shading using strictly 14-18 vibrant character colors, paired with EXPLOSIVE multi-layered "
-            "arcade pixel-art VFX (pure white hot core -> bright neon cyan/pink/gold mid-glow -> swirling energy ribbons, "
-            "shockwave rings, afterimages & flying pixel sparks), ZERO anti-aliasing, ZERO blur, ZERO painterly airbrush"
+            "clean flat 2-step cel shading using strictly 14-18 vibrant character colors, "
+            "ZERO anti-aliasing, ZERO blur, ZERO painterly airbrush"
         ),
     },
     "gba_64": {
@@ -112,15 +111,15 @@ ANIMATION_SPECS: dict[str, dict[str, Any]] = {
         "scroll_speed": 115,
         "view_prompt": "classic 2D side-scrolling 3/4 action RPG view, facing RIGHT consistently in every cell",
         "frame_beats": [
-            "Cell 1 (F1 R-CONTACT): Energetic walk — Right boot forward heel-contact, Left boot back, full silver sword held clearly forward-right, red scarf fluttering",
-            "Cell 2 (F2 R-DOWN): Weight cushions down onto flat Right boot, Left boot lifting behind, ponytail bouncing down, full silver sword intact",
-            "Cell 3 (F3 R-PASSING): Standing tall over Right boot, Left knee bent passing forward, full silver sword gently swinging",
-            "Cell 4 (F4 L-REACH): Pushing off Right toe, Left boot reaching forward-up, full silver sword clearly visible",
-            "Cell 5 (F5 L-CONTACT): Mirror of Cell 1 — Left boot forward heel-contact, Right boot back, full silver sword steady",
-            "Cell 6 (F6 L-DOWN): Weight cushions down onto flat Left boot, Right boot lifting behind, scarf flowing smoothly",
-            "Cell 7 (F7 L-PASSING): Standing tall over Left boot, Right knee bent passing forward, full silver sword clearly visible",
-            "Cell 8 (F8 PRE-LOOP BRIDGE): Pushing off Left toe, Right boot swinging forward just 1 tiny step before landing into Cell 9 (= Cell 1)!",
-            "Cell 9 (GHOST LOOP = F1): MUST BE 100% IDENTICAL TO CELL 1 — Right boot forward contact, Left boot back, full silver sword clearly held!",
+            "Cell 1 (F1 CONTACT 1 — RIGHT LEG FORWARD): Follow YELLOW=Near-Right leg & CYAN=Far-Left leg! Bright warm-brown NEAR Right boot extended FORWARD heel-on-ground; darker shaded FAR Left boot extended BACKWARD toe-on-ground; Right sword-arm swings slightly BACK (opposite arm-leg counter-swing!)",
+            "Cell 2 (F2 DOWN 1 — RIGHT LEG ABSORBS): NEAR Right boot plants FLAT under front torso absorbing weight (body dips 1px down!); FAR Left boot lifts OFF ground behind her; ponytail dips slightly",
+            "Cell 3 (F3 PASSING 1 — RIGHT LEG VERTICAL SUPPORT, LEFT CROSSES CENTER): NEAR Right leg stands STRAIGHT VERTICAL directly underneath her body planted solidly on ground! FAR Left leg bends knee and swings FORWARD right past the vertical Right leg at center! (DO NOT lift front leg up!)",
+            "Cell 4 (F4 HIGH/PUSH 1 — RIGHT PUSHES BACK, LEFT REACHES FORWARD): NEAR Right boot slides BACK behind hip pushing off toe; FAR Left boot swings HIGH & FORWARD ahead of body ready to land! Body at 1px walk peak; Right sword-arm swings forward",
+            "Cell 5 (F5 CONTACT 2 — LEFT LEG FORWARD, EXACT SWAP OF F1!): Darker shaded FAR Left boot now extended FORWARD heel-on-ground; brighter NEAR Right boot now extended BACKWARD toe-on-ground! Right sword-arm swings clearly FORWARD-UP!",
+            "Cell 6 (F6 DOWN 2 — LEFT LEG ABSORBS, SWAP OF F2!): FAR Left boot plants FLAT under front torso absorbing weight (body dips 1px down!); NEAR Right boot lifts OFF ground behind her!",
+            "Cell 7 (F7 PASSING 2 — LEFT LEG VERTICAL SUPPORT, RIGHT CROSSES CENTER, SWAP OF F3!): FAR Left leg stands STRAIGHT VERTICAL directly underneath her body planted solidly on ground! Brighter NEAR Right leg bends knee and swings FORWARD right across in front of the Left leg at center!",
+            "Cell 8 (F8 HIGH/PUSH 2 — LEFT PUSHES BACK, RIGHT REACHES FORWARD, SWAP OF F4!): FAR Left boot slides BACK behind hip pushing off toe; brighter NEAR Right boot swings HIGH & FORWARD just 1 tiny step before landing into Cell 9 (= Cell 1)!",
+            "Cell 9 (GHOST LOOP = F1): MUST BE 100% IDENTICAL TO CELL 1 — NEAR Right boot extended forward heel-on-ground, FAR Left boot extended backward, Right sword-arm slightly back!",
         ],
     },
     "run": {
@@ -145,15 +144,15 @@ ANIMATION_SPECS: dict[str, dict[str, Any]] = {
         "scroll_speed": 225,
         "view_prompt": "classic 2D side-scrolling 3/4 action RPG view, facing RIGHT consistently in every cell",
         "frame_beats": [
-            "Cell 1 (F1 R-STRIKE): Fast forward-leaning sprint — Right boot striking forward, Left leg stretched back, red scarf & ponytail streaming horizontally left, full silver sword held ready",
-            "Cell 2 (F2 R-PUSH): Low explosive push-off on Right boot, Left knee driving forward, full silver sword intact",
-            "Cell 3 (F3 FLIGHT 1): Brief airborne sprint stride (both boots slightly off floor!), legs wide apart, dynamic leaning torso",
-            "Cell 4 (F4 L-REACH): Left boot reaching forward to land, Right boot kicked high behind, ponytail bouncing",
-            "Cell 5 (F5 L-STRIKE): Mirror of Cell 1 — Left boot striking forward, Right leg stretched back, scarf streaming left",
-            "Cell 6 (F6 L-PUSH): Low explosive push-off on Left boot, Right knee driving forward",
-            "Cell 7 (F7 FLIGHT 2): Brief airborne sprint stride (mirror of Cell 3), full silver sword intact",
-            "Cell 8 (F8 PRE-LOOP BRIDGE): Right boot snapping forward just 1 tiny step before landing into Cell 9 (= Cell 1)!",
-            "Cell 9 (GHOST LOOP = F1): MUST BE 100% IDENTICAL TO CELL 1 — Right boot forward sprint strike, scarf streaming left!",
+            "Cell 1 (F1 R-STRIKE): Follow YELLOW=Near-Right leg & CYAN=Far-Left leg! Forward-leaning sprint — brighter NEAR Right boot striking FORWARD on ground, darker FAR Left leg kicked back; scarf streaming left; Right sword-arm pulled slightly back",
+            "Cell 2 (F2 R-ABSORB): NEAR Right leg bent directly underneath torso absorbing sprint load; darker FAR Left knee tucked pulling forward underneath; body low",
+            "Cell 3 (F3 R-PUSHOFF): NEAR Right leg extending FAR BACK pushing explosively off toe; darker FAR Left knee driving HIGH forward! Right sword-arm swinging forward",
+            "Cell 4 (F4 FLIGHT 1 — AIRBORNE!): BOTH boots slightly off ground! Darker FAR Left leg reaching far forward to land, brighter NEAR Right boot kicked high behind!",
+            "Cell 5 (F5 L-STRIKE — EXACT SWAP OF F1!): Darker FAR Left boot striking FORWARD on ground, brighter NEAR Right leg stretched far back! Right sword-arm swung clearly FORWARD!",
+            "Cell 6 (F6 L-ABSORB — EXACT SWAP OF F2!): Darker FAR Left leg bent directly underneath torso absorbing load; brighter NEAR Right knee tucked pulling forward in foreground!",
+            "Cell 7 (F7 L-PUSHOFF — EXACT SWAP OF F3!): Darker FAR Left leg pushing explosively FAR BACK off toe; brighter NEAR Right knee driving HIGH forward in foreground!",
+            "Cell 8 (F8 FLIGHT 2 — AIRBORNE, SWAP OF F4!): BOTH boots slightly off ground! Brighter NEAR Right boot reaching far forward just 1 tiny step before landing into Cell 9 (= Cell 1), darker FAR Left boot kicked high behind!",
+            "Cell 9 (GHOST LOOP = F1): MUST BE 100% IDENTICAL TO CELL 1 — brighter NEAR Right boot striking forward, darker FAR Left leg stretched back, scarf streaming left!",
         ],
     },
     "combo1_slash": {
@@ -324,19 +323,37 @@ def compile_variable_action_prompt(
     closed = bool(anim_spec.get("closed_loop", True))
     total = active + (1 if closed else 0)
     is_combat = bool(anim_spec.get("combat", {}).get("active_frames"))
-    pal_rule = (
-        f"STRICTLY LOCK character body colors to Image 1 ({', '.join(palette_hex[:16])}), "
-        "while unleashing HUGE, RICH, MULTI-LAYERED 16-bit arcade pixel-art VFX gradients (pure white core -> ice cyan -> electric azure -> sapphire; "
-        "pure white -> pastel pink -> hot magenta -> arcane violet; pure white -> bright starlight gold -> blazing flame orange -> crimson; plus crisp warm dust puffs)!"
-        if palette_hex
-        else "STRICTLY LOCK all character colors identically to Reference Image 1."
-    )
-    vfx_boost = (
-        "- EPIC ARCADE VFX MANDATE: Make combat slashes, energy waves, afterimage clones, magic circles, ground dust shockwaves, and starfall explosions "
-        "HUGE, BOLD, MULTI-LAYERED, AND GLOWING — filling the ENTIRE open right two-thirds of every active attack cell with crisp chunky pixel clusters (NEVER tiny timid thin arcs! NEVER draw ugly black outlines around glowing energy VFX!)."
-        if is_combat
-        else "- Keep clean crisp silhouette with full-length gleaming silver sword intact in EVERY SINGLE CELL."
-    )
+    if is_combat:
+        pal_rule = (
+            f"STRICTLY LOCK character body colors to Image 1 ({', '.join(palette_hex[:16])}), "
+            "while unleashing HUGE, RICH, MULTI-LAYERED 16-bit arcade pixel-art VFX gradients (pure white core -> ice cyan -> electric azure -> sapphire; "
+            "pure white -> pastel pink -> hot magenta -> arcane violet; pure white -> bright starlight gold -> blazing flame orange -> crimson; plus crisp warm dust puffs)!"
+            if palette_hex
+            else "STRICTLY LOCK all character colors identically to Reference Image 1."
+        )
+    else:
+        pal_rule = (
+            f"STRICTLY LOCK ALL pixels exclusively to Reference Image 1's character palette ({', '.join(palette_hex[:16])}). "
+            "ABSOLUTE ZERO VFX: NO magic waves, NO glowing slashes, NO sparkles, NO speed lines, NO dust clouds, NO floor cast shadows — ONLY the clean character sprite on 100% pure transparent background!"
+            if palette_hex
+            else "STRICTLY LOCK all colors identically to Reference Image 1. ZERO VFX, ZERO dust, ZERO shadows!"
+        )
+    is_loco = anim_spec["id"] in ("walk", "run")
+    if is_combat:
+        vfx_boost = (
+            "- EPIC ARCADE VFX MANDATE: Make combat slashes, energy waves, afterimage clones, magic circles, ground dust shockwaves, and starfall explosions "
+            "HUGE, BOLD, MULTI-LAYERED, AND GLOWING — filling the ENTIRE open right two-thirds of every active attack cell with crisp chunky pixel clusters (NEVER tiny timid thin arcs! NEVER draw ugly black outlines around glowing energy VFX!)."
+        )
+    elif is_loco:
+        vfx_boost = (
+            "- CRITICAL ANATOMICAL GAIT & LEFT/RIGHT LEG ALTERNATION RULE (FOLLOW REFERENCE IMAGE 2 SKELETON EXACTLY!):\n"
+            "  * Reference Image 2 draws a color-coded kinematic leg skeleton in every cell: the BRIGHT YELLOW leg is her NEAR (foreground/Right) leg (draw with brighter warm brown boot), and the CYAN leg is her FAR (background/Left) leg (draw with slightly darker shadow-brown boot partially behind the near leg)!\n"
+            "  * A foot that lands in FRONT (F1 / F5) MUST stay planted on the ground and SLIDE BACKWARD underneath her body (F2 -> F3 -> F4 / F6 -> F7 -> F8) while the OTHER leg lifts from behind, crosses through the vertical center (F3 / F7), and swings forward to land! NEVER march in place by lifting the front foot up and down!\n"
+            "  * Keep natural opposite arm-leg counter-swing: Right sword-hand swings slightly BACK when Right leg steps forward (F1), and clearly FORWARD when Left leg steps forward (F5)! Keep full-length gleaming silver sword intact in EVERY SINGLE CELL.\n"
+            "  * PURE CLEAN LOCOMOTION ONLY: Draw ZERO VFX, ZERO glowing arcs, ZERO sparkles, ZERO ground shadows, ZERO dust clouds — ONLY the pure clean character sprite on transparent background!"
+        )
+    else:
+        vfx_boost = "- Keep clean crisp silhouette with full-length gleaming silver sword intact in EVERY SINGLE CELL. ZERO VFX, ZERO shadows."
     return "\n".join([
         f"EXACT {cols} columns by {rows} rows ({total} frames total, reading strictly left-to-right, top-to-bottom from Cell 1 to Cell {total}) "
         "CLOSED-LOOP 16-bit CHUNKY LOW-RES PIXEL ART SINGLE-ACTION SPRITE SHEET on a pure transparent background.",

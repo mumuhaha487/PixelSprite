@@ -231,7 +231,7 @@ def cmd_action(args: argparse.Namespace) -> int:
         palette=palette,
         lock_palette=not args.no_palette_lock,
         outline=not args.no_outline,
-        preserve_vfx=True,
+        preserve_vfx=bool(anim.get("combat", {}).get("active_frames")),
         lock_body_x=bool(anim.get("lock_body_x", False)),
         allow_airborne=bool(anim.get("allow_airborne", False)),
         max_lift_px=float(anim.get("max_lift_px", 28.0)),

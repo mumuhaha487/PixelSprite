@@ -11,7 +11,8 @@ Use this skill whenever the user asks to create 2D pixel-art game character anim
 
 1. **Chunky Low-Res Character (`34px`) in Wide Combat Arena (`96×80`, Pivot `[30, 71]`)**: Keep the character chunky low-res (2-head chibi, 14–18 flat colors, 1px dark outline), anchored in the left third (`x = 30`) so **`66px` wide open VFX space** lets slashes, afterimages, magic circles, ground dust shockwaves, and starfall novas explode at full arcade scale with ZERO body shrinking or clipping!
 2. **Automatic Combat Frame Data (`combat.py`)**: Export clean production strips (`*_96x80.png`) paired with per-frame `frameData[]` in `*_meta.json` (`phase`: `startup`/`active`/`recovery`, `isAttackFrame`, `hitId`, `damage`, `hitstopMs`, `knockback`, green `hurtbox` from `body_mask`, and red `hitboxes` auto-fitted to actual VFX/weapon pixels on active frames!) plus `*_framedata_audit_3x.png`.
-3. **Spacious Single-Action Closed-Loop Grids (`N + 1` Ghost Anchor)**:
+3. **Spacious Closed-Loop Grids (`N + 1` Ghost) + Dual-Leg Color-Coded Gait Skeletons**:
+   - For `walk` and `run`, `guide.py` renders an explicit **Yellow (Near/Right) vs Cyan (Far/Left) kinematic leg skeleton** enforcing Contact → Down → Vertical Passing Crossover (`F3`/`F7`) → Push-Off/Reach → Left/Right Swap (`F5`) with strict zero-VFX isolation (never a one-legged hopping march!).
    - `8` active frames (`idle`/`walk`/`run`/`combo1_slash`) → `3×3` (`1536×1024` widescreen for `combo1_slash`, `1024×1024` for locomotion).
    - `11` active frames (`skill_phantom_flurry`) → `4×3` (`1536×1024`).
    - `14` active frames (`ult_starfall_slash`) → `5×3` (`1536×1024`).

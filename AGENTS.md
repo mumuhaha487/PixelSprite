@@ -18,7 +18,9 @@ Every generated action exports engine-ready combat frame data in `*_meta.json` (
 - **Body Hurtbox (`hurtbox`, Green)**: Automatically computed strictly from non-VFX core body pixels (`body_mask`), trimming floating scarf tips & extended weapons so hits feel fair. Exports both cell `[x, y, w, h]` and pivot-relative `rel: [dx, dy, w, h]` for Unity/Godot/Phaser!
 - **Active Attack Hitbox(es) (`hitboxes`, Red)**: Generated ONLY on `active` attack frames, automatically pixel-fitted directly to the generated sword + glowing VFX pixels (`vfx_mask`)! Ignores behind-back speed lines/afterimages on forward swings (`forward_vfx`) and wraps full explosive bursts on AoE finishers (`aoe_nova`).
 
-### 3. Spacious Closed-Loop `N + 1` Grids + Body-Isolated Zero-Teleport Quantizer (`quantizer.py`)
+### 3. Spacious Closed-Loop `N + 1` Grids + Dual-Leg Color-Coded Kinematic Gait Guides + Zero-Teleport Quantizer (`guide.py` / `quantizer.py`)
+- **NEVER generate `walk` or `run` with a legless blob guide** — image models lose track of left vs right legs and produce an unnatural one-legged "front-foot hop-in-place" march!
+- `guide.py` draws an explicit **Richard-Williams 8-frame dual-leg color-coded kinematic skeleton** (`YELLOW` = Near/Foreground Right leg with bright leather boot; `CYAN` = Far/Background Left leg with darker shaded boot) enforcing exact **Contact → Down → Vertical Passing Crossover (`F3`/`F7`) → Push-Off/Reach → Left/Right Swap (`F5`) → Ghost `F9=F1`** biomechanics + natural opposite arm-leg counter-swing (with STRICT zero-VFX prompt isolation on locomotion!).
 - Give EVERY action its own spacious grid with translucent `F1` anchor stamped in **Cell `1`** AND **Ghost Cell `N + 1`** (auto-stripped after RGB continuity audit):
   - `8` active frames: `3×3` (`1024×1024` for locomotion; `1536×1024` = `512×341`/cell widescreen for `combo1_slash`!).
   - `11` active frames (`skill_phantom_flurry`): `4×3` (`1536×1024` = `384×341`/cell).
