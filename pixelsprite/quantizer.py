@@ -466,14 +466,17 @@ def audit_closed_loop(frames_with_ghost: list[Image.Image], palette: list[list[i
     step_ious = [_frame_iou_and_rgb(active[i], active[i + 1])[0] for i in range(len(active) - 1)]
 
     body_cxs = []
+    body_foots = []
     body_hs = []
     for im in active:
         an = measure_cell_anatomy(np.array(im.convert("RGBA")), palette=palette)
         if an:
             body_cxs.append(an["body_cx"])
+            body_foots.append(an["body_foot_y"])
             body_hs.append(an["body_h"])
     max_dx = max((abs(body_cxs[i + 1] - body_cxs[i]) for i in range(len(body_cxs) - 1)), default=0.0)
     wrap_dx = abs(body_cxs[-1] - body_cxs[0]) if len(body_cxs) >= 2 else 0.0
+    max_dy = max((abs(body_foots[i + 1] - body_foots[i]) for i in range(len(body_foots) - 1)), default=0.0)
 
     return {
         "active_frames": active,
@@ -489,10 +492,51 @@ def audit_closed_loop(frames_with_ghost: list[Image.Image], palette: list[list[i
             "fN_vs_f1_rgb": round(fn_f1_rgb, 3),
             "avg_step_iou": round(float(np.mean(step_ious)) if step_ious else 0.0, 3),
             "max_body_dx_px": round(max(max_dx, wrap_dx), 2),
+            "max_body_dy_px": round(float(max_dy), 2),
             "body_h_min_max": [int(min(body_hs)), int(max(body_hs))] if body_hs else [0, 0],
-            "seam_smooth": fn_f1_rgb >= 0.68 and fn_f1_iou >= 0.80 and max(max_dx, wrap_dx) <= 4.5,
+            "seam_smooth": fn_f1_rgb >= 0.68 and fn_f1_iou >= 0.80 and max(max_dx, wrap_dx) <= 4.2,
         },
     }
+
+
+def stabilize_sequence_continuity(
+    frames: list[Image.Image],
+    pivot: tuple[int, int],
+    palette: list[list[int]] | None = None,
+    max_offset_x: float = 2.5,
+    lock_x: bool = False,
+) -> list[Image.Image]:
+    """
+    Post-quantization continuity stabilizer (v2.6):
+      - Re-measures final quantized body_cx & body_foot_y on every cell (immune to raw pre-snap VFX drift!).
+      - Clamps any horizontal X-teleport back within [pivot_x - max_offset_x, pivot_x + max_offset_x] using lossless integer shifts.
+      - Prevents grounded floor-ring/ember pixels from dragging body_foot_y below pivot_y + 1.
+    """
+    px, py = int(pivot[0]), int(pivot[1])
+    lim = 0.8 if lock_x else float(max_offset_x)
+    out: list[Image.Image] = []
+    for im in frames:
+        arr = np.array(im.convert("RGBA"))
+        an = measure_cell_anatomy(arr, palette=palette)
+        if an is None:
+            out.append(im)
+            continue
+        dx = 0
+        offset_x = an["body_cx"] - float(px)
+        if offset_x > lim:
+            dx = -int(round(offset_x - lim))
+        elif offset_x < -lim:
+            dx = -int(round(offset_x + lim))
+        dy = 0
+        if an["body_foot_y"] > py + 1:
+            dy = -(an["body_foot_y"] - py)
+        if dx != 0 or dy != 0:
+            shifted = Image.new("RGBA", im.size, (0, 0, 0, 0))
+            shifted.alpha_composite(im, (dx, dy))
+            out.append(shifted)
+        else:
+            out.append(im)
+    return out
 
 
 def make_loop_audit_preview(frames_with_ghost: list[Image.Image], cols: int, rows: int, scale: int = 3) -> Image.Image:
@@ -657,8 +701,10 @@ def quantize_grid(
         for r in range(rows)
     ]
     global_max_foot = max(row_max_foot) if row_max_foot else rch * 0.85
+    # v2.6 Airborne Row Fix: an all-airborne row (e.g. jump apex row) MUST NOT be misclassified as grounded
+    # just because its frames share similar elevated heights! Only rows whose feet truly reach the sheet floor are grounded.
     is_grounded_row = [
-        (row_max_foot[r] >= global_max_foot - rch * 0.12) or ((row_max_foot[r] - row_min_foot[r]) < rch * 0.05)
+        (row_max_foot[r] >= global_max_foot - rch * 0.09)
         for r in range(rows)
     ]
     grounded_floors = [row_max_foot[r] for r in range(rows) if is_grounded_row[r]]

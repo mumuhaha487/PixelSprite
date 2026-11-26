@@ -1,52 +1,51 @@
-# PixelSprite (v2.5)
+# PixelSprite (v2.6)
 
-> **AI-Native 16-bit Chunky Low-Res Pixel Sprite Pipeline — 6-Dimension Skeletal-Continuity Choreography × Sub-Action Anticipation Law (`子招前摇铁律`) × Multi-Part Chained High-Frame-Count Combos (`18f` / `24f+` Zero Resolution Cramping!) × Unified-Theme Physics-Driven VFX (`96×80` · Fixed `34px` Chibi) × Auto Pixel-Fitted Attack Frames / Hitboxes / Hurtboxes × Dual-Leg Kinematic Gait Guides**
+> **AI-Native 16-bit Chunky Low-Res Pixel Sprite Pipeline — 6-Dimension Skeletal-Continuity Choreography × Sub-Action Anticipation Law (`子招前摇铁律`) × Tri-Phase Power Rhythm (`三段力量节拍`: 蓄力停顿 → 极速挥动 → 命中定帧 → 正常后摇 → 招间换气) × Calm Grounded Splice Anchor Law (`稳态桥接铁律`) for 18f/24f+ Multi-Part Chained Combos × Monotonic Airborne Parabola & Post-Quantization Continuity Stabilizer × Auto Pixel-Fitted Hitboxes / Hurtboxes**
 
 把本仓库直接扔给任意 AI 编程助手（Claude Code / Codex / Antigravity / Cursor / Gemini CLI 等），AI 读取 [`AGENTS.md`](./AGENTS.md)、[`CLAUDE.md`](./CLAUDE.md) 与 [`.agents/skills/pixelsprite/SKILL.md`](./.agents/skills/pixelsprite/SKILL.md) 后，即可直接复现整套纯 Python、零浏览器依赖的 16-bit 低像素游戏战斗动画与帧数据管线。
 
 ---
 
-## v2.5 核心方法论（第 0 条铁律）
+## v2.6 六大核心工程铁律（`validate` + `quantizer.py` 自动强检）
 
-> **GPT Image 2.6 只当像素渲染器，AI 编导必须先逐帧设计好骨骼衔接、子招前摇与物理特效！**
+> **GPT Image 2.6 只当像素渲染器，AI 编导必须先逐帧设计好骨骼衔接、子招前摇、三段力量节拍与物理特效！**
 
-1. **强制 6 维逐帧骨骼编排（`frame_choreography[]`）**
-   - 严禁把动作外包给笼统提示词（完整模板见 [`examples/custom_action_template.json`](./examples/custom_action_template.json)，可用 `python -m pixelsprite validate <spec>` 自动强检）：
-     1. **`transition_from_prev`（帧间骨骼衔接链）**：明确写清从上一帧 `F[i-1]` 到本帧 `F[i]` 的关节与武器连续运动路径，杜绝姿态瞬移；
-     2. **`torso`（躯干与重心）**：前倾角、蹲沉/腾空高度、蓄力扭肩与斩击甩肩方向；
-     3. **`arms_weapon`（双手与武器轨迹）**：持武器主手与副手平衡臂的具体角度、挥砍平面、走路时的异侧手脚反向摆动；
-     4. **`legs_feet`（左右双腿独立轨迹）**：分别写明**近侧前景右腿**与**远侧背景左腿**状态（配合 `guide.py` 亮黄/亮青双色分腿运动学骨架）；
-     5. **`secondary_motion`（随动部件）**：马尾、围巾与运动加速度相反的拖尾与缓冲；
-     6. **`vfx_meaning`（统一主题的物理因果特效）**：纯移动严格 `NONE`；战斗动作锁定**单一元素主题**，明确物理来源、挥砍轨迹与战斗语义（前摇预警 / 判定区可视化 / 后摇消散）。
+1. **6 维逐帧骨骼编排（`frame_choreography[]`）**
+   - 严禁把动作外包给笼统提示词（模板见 [`examples/custom_action_template.json`](./examples/custom_action_template.json)）：逐帧写明 `transition_from_prev`（帧间骨骼衔接链）、`torso`、`arms_weapon`、`legs_feet`（近侧右腿与远侧左腿分离）、`secondary_motion`、`vfx_meaning`（纯移动与桥接帧严格 `NONE`；技能锁定单一元素主题）。
 2. **子招前摇铁律（Sub-Action Anticipation Law）**
-   - **连招中的每一段独立攻击都必须拥有自己的蓄力/收招准备帧（Chamber / Anticipation）**，绝不能“上挑 → 下劈 → 下一帧直接变成突刺已完成”！
-   - `validate_choreography()` 会自动拦截缺失子招前摇的设计，强制先补齐预备过渡帧再生成。
-3. **不限 8 帧 · 无缝多图串联高帧数引擎（`chained_parts`）**
-   - 高难度多段技能不再硬塞进 8～14 帧，也不把 20 格压扁在一张图里：通过 **`Part 1 (4×3)` + `Part 2 (3×3)`** 自动串联（把 Part 1 实测量化末帧 `F11` 半透明压印进 Part 2 第 1 格做衔接锚点、母图 `F1` 压印进末格做闭环锚点，双缝自动核验并去重），以满分辨率自由扩展至 **18 帧 / 24 帧+**！
+   - 连招中的**每一段独立攻击**都必须拥有自己的**前摇蓄力帧**与**极速挥动过渡帧**，严禁跳过前摇直接瞬移到下一段命中帧！
+3. **三段力量节拍铁律（Tri-Phase Power Rhythm · `timing_mode: "tri_phase_power"`）**
+   - 高级技能与多段重招按 **「前摇蓄力停顿（`190–235ms`）→ 极速挥动/空中过程（`50–60ms`）→ 命中打击定帧（`225–245ms`）→ 正常速度后摇收招（`75–85ms`）→ 招间换气衔接停顿（`130–145ms`）」** 编排（可用 `showcase-v2 --power-test` 一键生成「匀速 85ms 对照组 vs 力量节拍正式版 vs 0.5x 慢放骨骼检视」对比视频）。
+4. **稳态桥接铁律（Calm Grounded Splice Anchor Law · `2P` / `3P` 多图串联）**
+   - 复杂长连招（`18f` / `24f+`）通过 `chained_parts` 多图满分辨率串联（如 `3×3 + 3×3 + 4×3 = 24+1f`）。**每一个跨图桥接帧 `splice_from_prev_frame` 必须落在「稳态直立、完整 34px 身高、零特效（`NONE`）」的换气/过渡帧上**——严禁在蹲伏、腾空、攻击判定或地面残火帧上拼接（根治受击框膨胀与跨图水平跳帧）。
+5. **腾空抛物线单调铁律（Monotonic Airborne Parabola Law）**
+   - 跳跃类技能必须保持平滑单调的高度曲线（如 `0 → +7 → +14 → +20 顶点 → +12 → +4 → 0`，单帧垂直落差 `|dy| ≤ 10px`），上升帧与顶点蓄力帧姿态必须清晰区分，地面蓄力帧脚底严禁画粗光环拖低 `footY`；`quantizer.py` 已修复全腾空行被误判为地面基线的根因 Bug。
+6. **量化后硬性衔接门禁（Post-Quantization Continuity Gate）**
+   - `stabilize_sequence_continuity()` 在量化与串联拼接后复测真实像素主体重心与落脚点，自动消除原始抗锯齿边缘引起的水平跳动，严格要求 `[AUDIT PASS]`（`seam_smooth == True`、`maxBodyDX ≤ 4.0px`、`maxBodyDY ≤ 12px`、`MaxHurtW ≤ 38px`、`SPLICE iou ≥ 0.70`）。
 
 ---
 
-## v2.5 法医级全 6 组验收指标
+## v2.6 法医级全 7 组验收指标
 
-| 动作 | 有效+幽灵帧 | 生成架构 | 6 维编排 & 统一主题 | 前摇/子招蓄力 · **攻击判定帧** · 后摇 | 段数 & 射程 | `F[N]↔F[N+1]` | `F[N]→F1` | 最大 X 偏移 |
-|---|---|---|---|---|---|---:|---:|---:|
-| **待机 `idle`** | `8 + 1` | `[1P] 3×3` | `6-DIM OK` · 纯净呼吸 | 常态呼吸 | — | **93%** | **86%** | **0.1px** |
-| **行走 `walk`** | `8 + 1` | `[1P] 3×3` | `6-DIM OK` · 双色分腿交替 | 严格匀速 `95ms` | — | **76%** | **75%** | **0.5px** |
-| **疾跑 `run`** | `8 + 1` | `[1P] 3×3` | `6-DIM OK` · 双腿交替+腾空 | 严格匀速 `75ms` | — | **72%** | **73%** | **0.6px** |
-| **ATK 1·拔剑横斩** | `8 + 1` | `[1P] 3×3` | `6-DIM OK` · 青白剑风 | 前摇 `1-2` / **判定 `3-4`** / 后摇 `5-8` | **1 段 · 59px** | **85%** | **75%** | **1.8px** |
-| **SKILL R·居合瞬步三连破空斩** | **`18 + 1`** | **`[2P] 4×3+3×3`** | `6-DIM OK` · 电光青白钢风 | 前摇/子招蓄力 `1-4,6,8,11` / **判定 `5,7,9-10,12-13`** / 后摇 `14-18` | **5 段 · 65px** | **92%** | **69%** | **2.4px** |
-| **ULT F·星炎流星坠地斩** | **`18 + 1`** | **`[2P] 4×3+3×3`** | `6-DIM OK` · 星金烈焰 | 前摇/子招蓄力 `1-7,11` / **判定 `8-10,12`** / 后摇 `13-18` | **4 段 · 53px** | **79%** | **71%** | **6.2px** |
+| 动作 | 有效+幽灵帧 | 生成架构 | 节拍与元素主题 | 攻击判定帧 & 射程 | 跨图拼缝 `SPLICE` | `F[N]↔F[N+1]` | 最大 X 偏移 | 最大受击框宽 |
+|---|---|---|---|---|---:|---:|---:|---:|
+| **待机 `idle`** | `8 + 1` | `[1P] 3×3` | 常态呼吸 | — | — | **93%** | **0.1px** | **28px** |
+| **行走 `walk`** | `8 + 1` | `[1P] 3×3` | 严格匀速 `95ms` · 双色分腿交替 | — | — | **76%** | **0.5px** | **28px** |
+| **疾跑 `run`** | `8 + 1` | `[1P] 3×3` | 严格匀速 `75ms` · 双腿交替+腾空 | — | — | **72%** | **0.6px** | **29px** |
+| **ATK J·拔剑横斩** | `8 + 1` | `[1P] 3×3` | 命中定帧 · 青白剑风 | `F3-4`（1 段 · 59px） | — | **85%** | **1.8px** | **30px** |
+| **EX Q·三段蓄力破势连斩** | **`24 + 1`** | **`[3P] 3×3+3×3+4×3`** | **三段力量节拍** · 熔金烈钢 | `F5,12,19`（3 段 · 48px） | **`0.71 / 0.74`** | **93%** | **3.3px** | **32px** |
+| **SKILL R·居合瞬步五连斩** | **`18 + 1`** | **`[2P] 4×3+3×3`** | 蓄力+定帧 · 电光青白钢风 | `F5,7,9-10,12-13`（5 段 · 65px） | **`0.75`** | **92%** | **2.4px** | **31px** |
+| **ULT F·星炎流星坠地斩（v2.6修复）** | **`18 + 1`** | **`[2P] 4×3+3×3`** | **三段力量节拍** · 星金烈焰 | `F8,9,14`（3 段 · 52px） | **`0.82`** | **94%** | **3.4px** | **32px** |
 
-### 1. 行走 & 疾跑双脚运动学交替核验（`walk` / `run` · F1↔F5 左右脚对调 · F3/F7 中路交叉）
-| 行走 `walk`（8+1 帧） | 疾跑 `run`（8+1 帧） |
-|---|---|
-| ![Walk 8+1f](./examples/hero_orange_swordswoman/v2_closedloop/anim_walk_8f_loop_audit_3x.png) | ![Run 8+1f](./examples/hero_orange_swordswoman/v2_closedloop/anim_run_8f_loop_audit_3x.png) |
+### 1. 24 帧三段力量节拍长动作核验（`EX Q` · `5×5` 闭环 · 3 段无缝串联）
+- **蓄力停顿 `F3(220ms) / F10(230ms) / F17(225ms)` · 极速挥动 `50–55ms` · 命中定帧 `F5(230ms) / F12(245ms) / F19(240ms)` · 招间换气 `F8 / F14 (135ms)`**
+![EX Q 24f Tri-Phase Power Audit](./examples/hero_orange_swordswoman/v2_closedloop/anim_skill_tri_phase_breaker_24f_framedata_audit_3x.png)
 
-### 2. 18 帧精密串联连招 & 实时判定框核验（每一招均带独立蓄力前摇！）
-- **SKILL R · 居合瞬步三连破空斩（18+1 帧 · 上挑起势 F4 → 上挑 F5 → 脑后回蓄 F6 → 下劈 F7 → **收腰突刺前摇 F8** → 起刺 F9 → 贯通突刺 F10 → 回拉 F11 → 收刀点亮三痕 F12 → 爆裂定帧 F13）**
+### 2. 18 帧奥义与居合连招核验（`ULT F` v2.6 抛物线+稳态桥接修复版 & `SKILL R`）
+- **ULT F · 星炎流星坠地斩（18+1 帧 · 修复全腾空行基线 + 单调跳抛物线 `F4→F5→F6顶点→F7→F8→F9贯地` + 稳态零特效桥接 `F11` `iou=0.82` + `F12蓄力→F13极速上撩→F14烈焰上挑`）**
+![Ult F 18f v2.6 Fixed FrameData Audit](./examples/hero_orange_swordswoman/v2_closedloop/anim_ult_starfall_slash_18f_framedata_audit_3x.png)
+- **SKILL R · 居合瞬步三连破空斩（18+1 帧 · 含收腰水平突刺前摇 F8）**
 ![Skill R 18f FrameData & Hitbox Audit](./examples/hero_orange_swordswoman/v2_closedloop/anim_skill_phantom_flurry_18f_framedata_audit_3x.png)
-- **ULT F · 星炎流星坠地斩（18+1 帧 · 燃剑深蹲 F3 → 蹬跃升空 F4-F5 → 高空反弓举剑 F6 → 下劈起势 F7 → 凌空斜斩 F8 → 剑尖贯地 F9 → 星炎爆发 F10 → **拔剑蓄力前摇 F11** → 拔剑烈焰上挑 F12 → 胜利定格 F15）**
-![Ult F 18f FrameData & Hitbox Audit](./examples/hero_orange_swordswoman/v2_closedloop/anim_ult_starfall_slash_18f_framedata_audit_3x.png)
 
 ---
 
@@ -59,29 +58,34 @@ export PIXELSPRITE_API_URL="https://api.openai.com/v1"
 export PIXELSPRITE_API_KEY="sk-..."
 export PIXELSPRITE_MODEL="gpt-image-2.6-sunburst"
 
-# 1. 查看预设、串联分片数([1P]/[2P])与 6 维校验状态
+# 1. 查看全部 7 套预设、串联分片([1P]/[2P]/[3P])与 6 维/稳态桥接状态
 python -m pixelsprite list
 
-# 2. 生图前强制校验 6 维骨骼衔接与子招前摇铁律
-python -m pixelsprite validate skill_phantom_flurry
+# 2. 生图前强检 6 维骨骼、子招前摇、三段力量节拍与稳态桥接铁律
+python -m pixelsprite validate skill_tri_phase_breaker
+python -m pixelsprite validate ult_starfall_slash
 python -m pixelsprite validate examples/custom_action_template.json
 
-# 3. 严格模式生成单图或 18 帧多图串联技能
+# 3. 严格模式生成 18f / 24f+ 多图串联长动作
 python -m pixelsprite action \
   --anchor output/hero/01_anchor_pixel_64px.png \
   --desc "你的角色描述" \
-  --anim skill_phantom_flurry \
+  --anim skill_tri_phase_breaker \
   --strict-choreography \
   --out output/hero
 
-# 4. 一键全流程 -> 60 FPS 实时判定框演示视频
+# 4. 生成 3 段式力量感对比测试 MP4（匀速 85ms vs 三段力量节拍 vs 0.5x 慢放检验）
+python -m pixelsprite showcase-v2 \
+  --metas output/hero/anim_skill_tri_phase_breaker_24f_meta.json \
+  --power-test --loops 3 \
+  --out output/hero/power_test.mp4
+
+# 5. 一键全流程 -> 60 FPS 全动作实时判定框合集 MP4
 python -m pixelsprite all \
   --desc "你的角色描述" \
   --style gba_chibi \
-  --anims idle,walk,run,combo1_slash,skill_phantom_flurry,ult_starfall_slash \
+  --anims idle,walk,run,combo1_slash,skill_tri_phase_breaker,skill_phantom_flurry,ult_starfall_slash \
   --loops 3 \
   --out output/hero \
   --video output/hero/showcase_v2.mp4
 ```
-
-*(仓库同样保留 v1 `8×8` 核心 64 帧 + 炫酷技能 64 帧示例于 [`examples/hero_orange_swordswoman/`](./examples/hero_orange_swordswoman/)。)*

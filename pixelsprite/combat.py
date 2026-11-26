@@ -11,10 +11,11 @@ from .quantizer import _compute_vfx_mask, _largest_component, make_checkerboard_
 
 
 PHASE_COLORS = {
-    "neutral": (100, 116, 139, 220),   # slate
-    "startup": (245, 158, 11, 240),    # amber
-    "active": (239, 68, 68, 250),      # crimson red
-    "recovery": (56, 189, 248, 230),   # sky blue
+    "neutral": (100, 116, 139, 220),    # slate
+    "startup": (245, 158, 11, 240),     # amber
+    "active": (239, 68, 68, 250),       # crimson red
+    "recovery": (56, 189, 248, 230),    # sky blue
+    "link_pause": (168, 85, 247, 235),  # violet inter-move breath beat
 }
 
 PHASE_CN = {
@@ -22,6 +23,7 @@ PHASE_CN = {
     "startup": "前摇",
     "active": "判定",
     "recovery": "后摇",
+    "link_pause": "换气",
 }
 
 
@@ -211,6 +213,8 @@ def analyze_animation_combat(
     startup_set = set(combat_cfg.get("startup_frames", []))
     active_map: dict[int, dict[str, Any]] = {int(k): v for k, v in combat_cfg.get("active_frames", {}).items()}
     recovery_set = set(combat_cfg.get("recovery_frames", []))
+    link_pause_set = set(combat_cfg.get("link_pause_frames", []))
+    rhythm_beats: dict[int, str] = {int(k): str(v) for k, v in anim_spec.get("rhythm_beats", {}).items()}
 
     frame_data: list[dict[str, Any]] = []
     max_reach = 0
@@ -220,6 +224,7 @@ def analyze_animation_combat(
         fnum = idx + 1
         arr = np.array(im.convert("RGBA"))
         hurt = compute_hurtbox(arr, pivot=pivot, palette=palette)
+        beat = rhythm_beats.get(fnum, "")
 
         if fnum in active_map:
             phase = "active"
@@ -233,6 +238,7 @@ def analyze_animation_combat(
                 "frame": fnum,
                 "durationMs": int(durations[idx]),
                 "phase": phase,
+                "beat": beat or "hitstop",
                 "isAttackFrame": True,
                 "hitId": hit_id,
                 "damage": int(hcfg.get("damage", 15)),
@@ -244,11 +250,19 @@ def analyze_animation_combat(
                 "hitboxes": hboxes,
             }
         else:
-            phase = "startup" if fnum in startup_set else ("recovery" if fnum in recovery_set else "neutral")
+            if fnum in link_pause_set or beat == "link_pause":
+                phase = "link_pause"
+            elif fnum in startup_set:
+                phase = "startup"
+            elif fnum in recovery_set:
+                phase = "recovery"
+            else:
+                phase = "neutral"
             entry = {
                 "frame": fnum,
                 "durationMs": int(durations[idx]),
                 "phase": phase,
+                "beat": beat or phase,
                 "isAttackFrame": False,
                 "hitId": None,
                 "damage": 0,
@@ -264,6 +278,9 @@ def analyze_animation_combat(
     startup_ms = sum(fd["durationMs"] for fd in frame_data if fd["phase"] == "startup")
     active_ms = sum(fd["durationMs"] for fd in frame_data if fd["phase"] == "active")
     recovery_ms = sum(fd["durationMs"] for fd in frame_data if fd["phase"] == "recovery")
+    link_pause_ms = sum(fd["durationMs"] for fd in frame_data if fd["phase"] == "link_pause")
+    charge_frames = [fd["frame"] for fd in frame_data if fd["beat"] == "charge_hold"]
+    hitstop_frames = [fd["frame"] for fd in frame_data if fd["beat"] == "hitstop"]
 
     summary = {
         "hasAttack": len(active_map) > 0,
@@ -271,9 +288,13 @@ def analyze_animation_combat(
         "startupFrames": sorted(startup_set),
         "activeFrames": sorted(active_map.keys()),
         "recoveryFrames": sorted(recovery_set),
+        "linkPauseFrames": sorted(link_pause_set),
+        "chargeHoldFrames": charge_frames,
+        "hitstopFrames": hitstop_frames,
         "startupMs": int(startup_ms),
         "activeMs": int(active_ms),
         "recoveryMs": int(recovery_ms),
+        "linkPauseMs": int(link_pause_ms),
         "totalHitCount": len(hit_ids),
         "maxReachPx": int(max_reach),
     }
@@ -347,10 +368,22 @@ def make_framedata_audit_preview(
             for cx, cy in ((ax0, ay0), (ax1, ay0), (ax0, ay1), (ax1, ay1)):
                 od.rectangle([cx - 2, cy - 2, cx + 2, cy + 2], fill=(254, 240, 138, 255))
 
-        # Top phase badge
+        # Top phase/beat badge
+        beat = fd.get("beat", "")
         if phase == "active":
-            tag = f"F{idx+1} ACTIVE HIT#{fd['hitId']} ({fd['durationMs']}ms)"
+            tag = f"F{idx+1} HIT#{fd['hitId']} STOP ({fd['durationMs']}ms)" if beat == "hitstop" else f"F{idx+1} ACTIVE HIT#{fd['hitId']} ({fd['durationMs']}ms)"
+            bw = 176
+        elif beat == "charge_hold":
+            tag = f"F{idx+1} CHARGE HOLD ({fd['durationMs']}ms)"
+            bw = 172
+            od.rectangle([ox + 1, oy + 1, ox + scw - 2, oy + sch - 2], outline=(251, 191, 36, 235), width=3)
+        elif phase == "link_pause":
+            tag = f"F{idx+1} LINK PAUSE ({fd['durationMs']}ms)"
             bw = 166
+            od.rectangle([ox + 1, oy + 1, ox + scw - 2, oy + sch - 2], outline=(168, 85, 247, 235), width=2)
+        elif beat == "motion":
+            tag = f"F{idx+1} FAST SWING ({fd['durationMs']}ms)"
+            bw = 158
         else:
             tag = f"F{idx+1} {phase.upper()} ({fd['durationMs']}ms)"
             bw = 136

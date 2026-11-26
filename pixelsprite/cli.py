@@ -29,6 +29,7 @@ from .quantizer import (
     quantize_anchor,
     quantize_grid,
     rgb_to_hex,
+    stabilize_sequence_continuity,
 )
 from .showcase import render_variable_timing_showcase_mp4
 
@@ -52,7 +53,7 @@ def cmd_list(_args: argparse.Namespace) -> int:
     print("=== Pixel Styles ===")
     for k, v in PIXEL_STYLES.items():
         print(f"  {k:12s} | cell={v['cell_w']}x{v['cell_h']} | charH={v['char_height_px']}px | colors={v['palette_colors']} | {v['label']}")
-    print("\n=== v2.5 Wide-Arena Closed-Loop Variable-Length Animations + 6-Dim Skeletal Choreography & Sub-Action Anticipation ===")
+    print("\n=== v2.6 Wide-Arena Closed-Loop Animations + 6-Dim Skeletal Continuity + Tri-Phase Power Rhythm + Calm-Splice Gate ===")
     for k, a in ANIMATION_SPECS.items():
         g = f"{a['grid'][0]}x{a['grid'][1]} ({a['api_size']})"
         total_ms = sum(a["frame_durations_ms"])
@@ -127,6 +128,15 @@ def _export_action_outputs(
     pal_hex = [rgb_to_hex(c) for c in palette]
     sz_tag = f"{cell_w}x{cell_h}" if cell_w != cell_h else f"{cell_w}px"
 
+    # Post-quantization horizontal & floor continuity stabilizer (v2.6 — eliminates raw pre-snap VFX X-teleports & floor sinking!)
+    frames_used = stabilize_sequence_continuity(
+        frames_used,
+        pivot=(pivot[0], pivot[1]),
+        palette=palette,
+        max_offset_x=1.8,
+        lock_x=bool(anim.get("lock_body_x", False)),
+    )
+
     if closed:
         audited = audit_closed_loop(frames_used, palette=palette)
         active_frames = audited["active_frames"]
@@ -138,7 +148,7 @@ def _export_action_outputs(
             f"F{n_active}<->F{n_total} rgb={m['fN_vs_ghost_rgb']:.2f} | "
             f"F{n_total}<->F1 rgb={m['ghost_vs_f1_rgb']:.2f} | "
             f"F{n_active}->F1 rgb={m['fN_vs_f1_rgb']:.2f} | "
-            f"maxBodyDX={m['max_body_dx_px']:.1f}px | bodyH={m['body_h_min_max']}"
+            f"maxBodyDX={m['max_body_dx_px']:.1f}px | maxBodyDY={m.get('max_body_dy_px', 0.0):.1f}px | bodyH={m['body_h_min_max']}"
         )
         make_loop_audit_preview(frames_used, cols=cols, rows=rows, scale=3).save(out_dir / f"{prefix}_loop_audit_3x.png")
     else:
@@ -149,11 +159,14 @@ def _export_action_outputs(
     # Compute exact Pixel-Fitted Combat Frame Data (Hurtboxes + Active Attack Hitboxes + Startup/Active/Recovery!)
     combat_res = analyze_animation_combat(active_frames, anim, pivot=(pivot[0], pivot[1]), palette=palette)
     cs = combat_res["combatSummary"]
+    max_hurt_w = max((fd["hurtbox"]["w"] for fd in combat_res["frameData"]), default=0)
+    if max_hurt_w > 38:
+        print(f"[HURTBOX WARN] {anim['id']} has bloated hurtbox width {max_hurt_w}px (>38px) — check floor VFX isolation!")
     if cs["hasAttack"]:
         print(
             f"[COMBAT] {anim['id']:20s} | Startup={cs['startupFrames']}({cs['startupMs']}ms) | "
             f"ACTIVE={cs['activeFrames']}({cs['activeMs']}ms, {cs['totalHitCount']} hits) | "
-            f"Recovery={cs['recoveryFrames']}({cs['recoveryMs']}ms) | MaxReach={cs['maxReachPx']}px"
+            f"Recovery={cs['recoveryFrames']}({cs['recoveryMs']}ms) | MaxReach={cs['maxReachPx']}px | MaxHurtW={max_hurt_w}px"
         )
     make_framedata_audit_preview(frames_used, combat_res["frameData"], cols=cols, rows=rows, scale=3).save(
         out_dir / f"{prefix}_framedata_audit_3x.png"
@@ -168,7 +181,7 @@ def _export_action_outputs(
         ghost_frame.save(out_dir / ghost_file)
 
     meta = {
-        "generator": "PixelSprite 2.3 (5-Dim Choreography + Purposeful Wide-Arena VFX + Auto Hitbox/Hurtbox + N+1 Closed-Loop)",
+        "generator": "PixelSprite 2.6 (6-Dim Skeletal Continuity + Tri-Phase Power Rhythm + Multi-Part Chained + Auto Hitbox/Hurtbox + N+1 Closed-Loop)",
         "id": anim["id"],
         "name": anim["name"],
         "key": anim.get("key", anim["id"].upper()),
@@ -184,6 +197,7 @@ def _export_action_outputs(
         "auditGrid": [cols, rows],
         "timingMode": anim.get("timing_mode", "hitstop"),
         "frameDurationsMs": anim["frame_durations_ms"],
+        "rhythmBeats": anim.get("rhythm_beats", {}),
         "holdTags": anim.get("hold_tags", {}),
         "scrollSpeed": anim.get("scroll_speed", 0),
         "loopAudit": m,
@@ -274,14 +288,24 @@ def cmd_action(args: argparse.Namespace) -> int:
             )
             pivot_out = q["pivot"]
             p_frames = q["frames"][: len(part["frame_indices"])]
+            start_idx = 0
             if splice_fnum and splice_img is not None:
                 from .quantizer import _frame_iou_and_rgb
                 s_iou, s_rgb = _frame_iou_and_rgb(splice_img, p_frames[0])
-                print(f"[SPLICE AUDIT] {anim['id']} F{splice_fnum} Part1<->Part2_Cell1: iou={s_iou:.2f}, rgb={s_rgb:.2f} (dropping duplicate bridge Cell 1)")
-                stitched_frames.extend(p_frames[1:])
+                print(
+                    f"[SPLICE AUDIT] {anim['id']} F{splice_fnum} Part{p_idx}<->Part{p_idx+1}_Cell1: "
+                    f"iou={s_iou:.2f}, rgb={s_rgb:.2f} (dropping duplicate bridge Cell 1)"
+                )
+                start_idx = 1
+
+            if "drop_last" in part:
+                drop_n = int(part["drop_last"])
+                end_idx = len(p_frames) - drop_n if drop_n > 0 else len(p_frames)
+            elif "keep_count" in part:
+                end_idx = int(part["keep_count"])
             else:
-                keep_n = int(part.get("keep_count", len(p_frames)))
-                stitched_frames.extend(p_frames[:keep_n])
+                end_idx = len(p_frames)
+            stitched_frames.extend(p_frames[start_idx:end_idx])
 
         _export_action_outputs(anim, stitched_frames[:n_total], pivot_out, palette, out_dir, prefix, cell_w, cell_h, char_h)
         return 0
@@ -365,6 +389,7 @@ def cmd_repack(args: argparse.Namespace) -> int:
 
 def cmd_showcase_v2(args: argparse.Namespace) -> int:
     clips = []
+    power_test = bool(getattr(args, "power_test", False))
     for mp in args.metas:
         meta_path = Path(mp)
         base = meta_path.parent
@@ -376,7 +401,8 @@ def cmd_showcase_v2(args: argparse.Namespace) -> int:
         act_frames = [strip.crop((i * cw, 0, (i + 1) * cw, ch)) for i in range(n)]
         ghost_im = Image.open(base / meta["ghostFile"]).convert("RGBA") if meta.get("ghostFile") and (base / meta["ghostFile"]).is_file() else None
         g_cols, g_rows = meta.get("auditGrid", [len(act_frames) + (1 if ghost_im else 0), 1])
-        clips.append({
+
+        base_clip = {
             "title": f"[{meta['key']}] {meta['name']}",
             "subtitle": meta["name"],
             "active_frames": act_frames,
@@ -384,6 +410,7 @@ def cmd_showcase_v2(args: argparse.Namespace) -> int:
             "audit_grid_cols": g_cols,
             "audit_grid_rows": g_rows,
             "durations_ms": meta["frameDurationsMs"],
+            "rhythm_beats": meta.get("rhythmBeats", {}),
             "hold_tags": meta.get("holdTags", {}),
             "timing_mode": meta.get("timingMode", "hitstop"),
             "seam_metrics": meta.get("loopAudit", {}),
@@ -392,7 +419,38 @@ def cmd_showcase_v2(args: argparse.Namespace) -> int:
             "pivot": meta.get("pivot", [int(cw * 0.3125), int(ch * 0.89)]),
             "scroll_speed": meta.get("scrollSpeed", 0),
             "loops": args.loops,
-        })
+        }
+        if power_test:
+            # 3-Section Power-Feel Verification Showcase:
+            #   1) Flat Even 85ms control (1x loop) — feel how rushed & weightless uniform timing is!
+            #   2) Full Tri-Phase Power Rhythm + Hitstop Shake (3x loops) — charge holds + fast swings + impact hitstop + inter-move link pauses!
+            #   3) 0.5x Slow-Motion Skeleton Continuity Inspection (1x loop, zero shake) — verify every bone & anticipation pose!
+            clips.append({
+                **base_clip,
+                "title": f"[对照组·匀速85ms] {meta['name']}",
+                "header_banner": "力量感对比测试 [1/3 对照组] · 全程匀速 85ms（无蓄力停顿 · 无命中定帧 · 无招间换气）",
+                "durations_ms": [85] * n,
+                "timing_mode": "even",
+                "power_feel_fx": False,
+                "loops": 1,
+            })
+            clips.append({
+                **base_clip,
+                "title": f"[力量节拍版] {meta['name']}",
+                "header_banner": "力量感对比测试 [2/3 正式版] · 蓄力停顿(220~230ms) × 极速挥动(50~55ms) × 命中定帧(230~245ms) × 换气衔接",
+                "power_feel_fx": True,
+                "loops": max(2, int(args.loops)),
+            })
+            clips.append({
+                **base_clip,
+                "title": f"[0.5x慢放检验] {meta['name']}",
+                "header_banner": "力量感对比测试 [3/3 0.5x慢放检验] · 逐帧核验6维骨骼衔接、子招前摇与受击/攻击判定框",
+                "power_feel_fx": False,
+                "speed_scale": 0.5,
+                "loops": 1,
+            })
+        else:
+            clips.append(base_clip)
 
     render_variable_timing_showcase_mp4(clips, Path(args.out), fps_video=60, show_hitboxes=not args.no_hitboxes)
     return 0
@@ -487,10 +545,11 @@ def build_parser() -> argparse.ArgumentParser:
     add_quant(sp_rp)
     sp_rp.set_defaults(func=cmd_repack)
 
-    sp_sv2 = sub.add_parser("showcase-v2", help="Render 60 FPS Live Hitbox/Hurtbox + Variable-Timing + Seam Audit MP4")
+    sp_sv2 = sub.add_parser("showcase-v2", help="Render 60 FPS Live Hitbox/Hurtbox + Tri-Phase Power Rhythm + Seam Audit MP4")
     sp_sv2.add_argument("--metas", nargs="+", required=True)
     sp_sv2.add_argument("--loops", type=int, default=3)
     sp_sv2.add_argument("--no-hitboxes", action="store_true")
+    sp_sv2.add_argument("--power-test", action="store_true", help="Render 3-section A/B Power-Feel Test (Even 85ms vs Tri-Phase Power Rhythm vs 0.5x Slow-Mo)")
     sp_sv2.add_argument("--out", required=True)
     sp_sv2.set_defaults(func=cmd_showcase_v2)
 

@@ -178,24 +178,57 @@ def _draw_combat_choreography_pose(
         }
         pose = poses.get(fnum, pose)
     elif vfx_hint == "solar_18f_master":
+        # v2.6 Monotonic Airborne Parabola + Calm Grounded Splice Anchor F11 + Fast Uppercut Motion F13!
+        # Airborne curve: 0 -> 0 -> 0 -> +0.20 (F4) -> +0.42 (F5) -> +0.58 APEX (F6) -> +0.34 (F7) -> +0.12 (F8) -> 0 (F9 SLAM!)
         poses = {
-            2:  (0.00, 0.14,   4,  -65.0,  14, 0.50),  # F2: Deep spring crouch
-            3:  (0.00, 0.16,   4,  -58.0,  14, 0.52),  # F3: Blade ignition hold
-            4:  (0.24, 0.00,   6,  -78.0,  14, 0.52),  # F4: Takeoff extension
-            5:  (0.46, 0.00,   4,  -95.0,   8, 0.54),  # F5: Rising ascent
-            6:  (0.58,-0.04,  -8, -138.0,  -8, 0.54),  # F6: Aerial apex — arched overhead raise!
-            7:  (0.44, 0.02,  10,  -35.0,  18, 0.54),  # F7: Dive entry
-            8:  (0.24, 0.04,  18,   38.0,  22, 0.56),  # F8: HIT#1 — aerial meteor dive-slash!
-            9:  (0.00, 0.18,  12,   82.0,  20, 0.54),  # F9: HIT#2 — sword stabbed point-first into floor!
-            10: (0.00, 0.18,  10,   82.0,  20, 0.54),  # F10: HIT#3 — locked ground-stab flame wave eruption!
-            11: (0.00, 0.16,   4,   68.0,  16, 0.52),  # F11: Sub-Prep — wrench-up chamber (blade still low on floor!)
-            12: (0.00, 0.02,  10,  -48.0,  20, 0.54),  # F12: HIT#4 — yanking sword UP out of floor!
-            13: (0.00, 0.00,   4,  -15.0,  18, 0.50),  # F13: Shake off embers
-            14: (0.00, 0.00,   0,  -45.0,  18, 0.50),  # F14: Clean blade rise
-            15: (0.00,-0.04,   0,  -62.0,  18, 0.52),  # F15: Heroic victory flourish!
-            16: (0.00, 0.00,   0,  -42.0,  18, 0.50),  # F16: Lower to guard
-            17: (0.00, 0.00,   0,  -35.0,  18, 0.50),  # F17: Settle
-            18: (0.00, 0.00,   0,  -35.0,  18, 0.50),  # F18: Pre-loop
+            2:  (0.00, 0.14,   2,  -55.0,  14, 0.50),  # F2: Deep spring crouch
+            3:  (0.00, 0.18,   2,  -50.0,  14, 0.52),  # F3: CHARGE HOLD #1 — blade ignition crouch (boots flat on ground!)
+            4:  (0.20, 0.00,   4,  -62.0,  14, 0.52),  # F4: Takeoff launch (+7px lift, sword angled forward-up)
+            5:  (0.42, 0.00,   2,  -90.0,   8, 0.54),  # F5: Mid-ascent (+14px lift, sword straight vertical overhead!)
+            6:  (0.58,-0.04,  -6, -138.0,  -8, 0.56),  # F6: CHARGE HOLD #2 — TRUE AERIAL APEX (+20px HIGHEST!), arched back behind head!
+            7:  (0.34, 0.02,  10,  -25.0,  18, 0.54),  # F7: FAST MOTION — mid-air downward dive (+12px lift!)
+            8:  (0.12, 0.06,  16,   38.0,  22, 0.56),  # F8: HIT#1 — low-air meteor cleave (+4px lift — smooth landing!)
+            9:  (0.00, 0.18,  10,   78.0,  20, 0.56),  # F9: HITSTOP #2 — GROUND SLAM + SOLAR FLAME WAVE CLIMAX!
+            10: (0.00, 0.06,   4,   12.0,  16, 0.52),  # F10: Recovery unwind — pulling sword off floor as flames fade
+            11: (0.00, 0.00,   0,  -26.0,  16, 0.50),  # F11: LINK PAUSE 1->2 — CALM GROUNDED 34px ZERO-VFX SPLICE ANCHOR!
+            12: (0.00, 0.18,  -8,  158.0, -10, 0.54),  # F12: CHARGE HOLD #3 — low-knee coiled flame uppercut chamber!
+            13: (0.04, 0.04,  10,   15.0,  16, 0.54),  # F13: FAST MOTION — explosive upward flame whip!
+            14: (0.06,-0.04,  14,  -65.0,  18, 0.58),  # F14: HITSTOP #3 — RISING SOLAR FLAME UPPERCUT CLIMAX!
+            15: (0.00, 0.00,   4,  -78.0,  14, 0.52),  # F15: Recovery 1 — apex deceleration, embers fading
+            16: (0.00, 0.00,   2,  -42.0,  16, 0.50),  # F16: Recovery 2 — lower clean silver sword to guard
+            17: (0.00, 0.00,   0,  -35.0,  18, 0.50),  # F17: Recovery 3 — calm guard settle
+            18: (0.00, 0.00,   0,  -35.0,  18, 0.50),  # F18: Pre-loop (= F1)
+        }
+        pose = poses.get(fnum, pose)
+    elif vfx_hint == "tri_phase_24f_master":
+        # 24-Frame Tri-Phase Power Rhythm Master Pose & Sword Vector Table (3 heavy distinct moves!)
+        poses = {
+            # MOVE 1: Heavy Coiled Uppercut Cleave (F1..F8)
+            2:  (0.00, 0.12,  -6,  140.0,  -6, 0.50),  # F2: Move 1 wind-up entry (dropping low)
+            3:  (0.00, 0.20, -10,  165.0, -12, 0.54),  # F3: CHARGE HOLD #1 — deep coiled squat, sword pulled low-back!
+            4:  (0.04, 0.04,  10,   20.0,  16, 0.54),  # F4: FAST MOTION #1 — explosive spring upward swing!
+            5:  (0.06,-0.04,  14,  -68.0,  18, 0.58),  # F5: HITSTOP #1 — towering uppercut cleave apex!
+            6:  (0.00, 0.00,   6,  -82.0,  14, 0.52),  # F6: Recovery 1 — apex settle & spark fade
+            7:  (0.00, 0.00,   2,  -40.0,  16, 0.50),  # F7: Recovery 2 — lower sword to chest guard
+            8:  (0.00, 0.00,   0,  -25.0,  16, 0.50),  # F8: LINK PAUSE 1->2 — calm grounded 34px stance reset (SPLICE #1!)
+            # MOVE 2: Leaping Overhead Meteor Slam (F9..F14)
+            9:  (0.24, 0.00,   4,  -88.0,  10, 0.52),  # F9: Move 2 takeoff jump, hoisting sword skyward!
+            10: (0.56,-0.04,  -8, -140.0,  -8, 0.56),  # F10: CHARGE HOLD #2 — AIRBORNE APEX high overhead double-hand hold!
+            11: (0.28, 0.04,  14,  -15.0,  18, 0.56),  # F11: FAST MOTION #2 — rapid airborne downward dive-swing!
+            12: (0.00, 0.20,  16,   52.0,  22, 0.58),  # F12: HITSTOP #2 — heavy ground-slam cleave shockwave!
+            13: (0.00, 0.06,   6,   10.0,  16, 0.52),  # F13: Recovery — ground recoil & lift upright
+            14: (0.00, 0.00,   0,  -30.0,  16, 0.50),  # F14: LINK PAUSE 2->3 — calm grounded 34px ready poise (SPLICE #2!)
+            # MOVE 3: Finisher — Coiled Waist-Chamber Piercing Lance (F15..F24)
+            15: (0.00, 0.08,  -4,  -10.0,   4, 0.50),  # F15: Move 3 entry — wide fencer's step back, elbow pulling back
+            16: (0.00, 0.14,  -8,    0.0,  -4, 0.52),  # F16: Chamber coil — lowering stance, blade leveling at waist
+            17: (0.00, 0.18, -12,    0.0, -10, 0.54),  # F17: CHARGE HOLD #3 — MAX waist-chamber lock, blinding tip star!
+            18: (0.00, 0.10,  10,    0.0,  16, 0.56),  # F18: FAST MOTION #3 — rocket lunge mid-thrust!
+            19: (0.00, 0.12,  22,    0.0,  30, 0.62),  # F19: HITSTOP #3 — FULL-ARENA PIERCING LANCE BEAM FINISHER!
+            20: (0.00, 0.08,  14,    4.0,  22, 0.54),  # F20: Recovery 1 — beam dissipating, holding lunge
+            21: (0.00, 0.02,   4,  -12.0,  16, 0.50),  # F21: Recovery 2 — step back & retract elbow
+            22: (0.00, 0.00,   0,  -35.0,  18, 0.50),  # F22: Recovery 3 — clean guard reset
+            23: (0.00, 0.00,   0,  -35.0,  18, 0.50),  # F23: Breath settle
+            24: (0.00, 0.00,   0,  -35.0,  18, 0.50),  # F24: Pre-loop bridge (= F1)
         }
         pose = poses.get(fnum, pose)
 
@@ -256,20 +289,68 @@ def _draw_combat_choreography_pose(
                 draw.ellipse([rx0 - 6, oy0 + 22, rx1, base_y - 8], outline=(165, 248, 255, 165), width=4)
     elif vfx_hint == "solar_18f_master":
         if fnum == 3:
-            draw.ellipse([cx - 38, base_y - 10, cx + 44, base_y + 8], outline=(255, 224, 71, 175), width=3)
+            # Flame glint strictly on sword blade (NO ring underneath boots so boots never sink!)
+            draw.ellipse([tip_x - 14, tip_y - 14, tip_x + 14, tip_y + 14], outline=(255, 224, 71, 200), width=3)
         elif fnum == 4:
-            draw.ellipse([cx - 42, base_y - 12, cx + 42, base_y + 8], outline=(240, 230, 210, 155), width=3)
+            draw.ellipse([cx - 38, base_y - 10, cx + 38, base_y + 6], outline=(240, 230, 210, 155), width=2)
         elif fnum == 6:
-            draw.ellipse([tip_x - 24, tip_y - 24, tip_x + 24, tip_y + 24], outline=(255, 224, 71, 195), width=4)
+            draw.ellipse([tip_x - 24, tip_y - 24, tip_x + 24, tip_y + 24], outline=(255, 224, 71, 210), width=4)
+        elif fnum == 7:
+            draw.arc([cx, oy0 + 18, rx1 - 18, base_y - 14], start=-72, end=12, fill=(255, 224, 120, 180), width=6)
         elif fnum == 8:
-            draw.arc([cx - 10, oy0 + 16, rx1, base_y - 6], start=-75, end=52, fill=(251, 146, 60, 195), width=10)
-        elif fnum in (9, 10):
-            draw.line([(tip_x, base_y), (tip_x, oy0 + 26)], fill=(255, 244, 186, 195), width=8)
-            if fnum == 10:
-                draw.arc([tip_x - 20, oy0 + 18, rx1, base_y + 12], start=-115, end=0, fill=(251, 146, 60, 195), width=10)
-                draw.ellipse([tip_x - 32, base_y - 14, rx1, base_y + 10], outline=(255, 224, 71, 180), width=4)
+            draw.arc([cx - 10, oy0 + 18, rx1, base_y - 4], start=-70, end=55, fill=(251, 146, 60, 200), width=10)
+        elif fnum == 9:
+            # HITSTOP #2: Ground slam flame pillar + roaring forward wave!
+            draw.line([(tip_x, base_y), (tip_x, oy0 + 22)], fill=(255, 244, 186, 205), width=8)
+            draw.arc([tip_x - 16, oy0 + 18, rx1, base_y + 10], start=-115, end=0, fill=(251, 146, 60, 205), width=11)
         elif fnum == 12:
-            draw.arc([cx + 12, oy0 + 24, rx1, base_y - 4], start=-65, end=20, fill=(251, 182, 36, 185), width=8)
+            # CHARGE HOLD #3: Coiled low-knee flame tip glint
+            draw.ellipse([tip_x - 14, tip_y - 14, tip_x + 14, tip_y + 14], outline=(255, 224, 71, 205), width=3)
+        elif fnum == 13:
+            # FAST MOTION: Rising golden-orange upward whip ribbon
+            draw.arc([cx - 4, oy0 + 26, rx1 - 22, base_y - 4], start=-30, end=42, fill=(255, 230, 140, 185), width=7)
+        elif fnum == 14:
+            # HITSTOP #3: Towering rising solar flame crescent!
+            draw.arc([cx - 4, oy0 + 14, rx1, base_y - 4], start=-78, end=25, fill=(251, 146, 60, 210), width=11)
+    elif vfx_hint == "tri_phase_24f_master":
+        # Molten-Gold Kinetic Steel VFX Trajectory Guides
+        if fnum == 3:
+            # Coiled charge #1: tight golden tension spark at blade guard + subtle boot dust
+            draw.ellipse([tip_x - 14, tip_y - 14, tip_x + 14, tip_y + 14], outline=(255, 224, 71, 210), width=3)
+            draw.ellipse([cx - 34, base_y - 8, cx + 34, base_y + 8], outline=(240, 230, 200, 150), width=2)
+        elif fnum == 4:
+            # Fast upward motion smear ribbon
+            draw.arc([cx - 4, oy0 + 26, rx1 - 24, base_y - 4], start=-30, end=40, fill=(255, 244, 186, 175), width=6)
+        elif fnum == 5:
+            # HITSTOP #1: Massive molten-gold uppercut crescent arc + apex cross-spark!
+            draw.arc([cx - 6, oy0 + 14, rx1, base_y - 4], start=-78, end=25, fill=(251, 182, 36, 210), width=11)
+            draw.line([(tip_x + 28, oy0 + 28), (tip_x + 62, oy0 + 62)], fill=(255, 255, 255, 210), width=4)
+            draw.line([(tip_x + 62, oy0 + 28), (tip_x + 28, oy0 + 62)], fill=(255, 255, 255, 210), width=4)
+        elif fnum == 10:
+            # Coiled charge #2: Airborne overhead golden sun-halo around raised sword tip!
+            draw.ellipse([tip_x - 24, tip_y - 24, tip_x + 24, tip_y + 24], outline=(255, 224, 71, 220), width=4)
+        elif fnum == 11:
+            # Fast airborne downward dive speed streak
+            draw.arc([cx, oy0 + 18, rx1 - 16, base_y - 10], start=-75, end=15, fill=(255, 230, 140, 185), width=7)
+        elif fnum == 12:
+            # HITSTOP #2: Heavy overhead meteor slam vertical shockwave + floor eruption burst!
+            draw.arc([cx - 4, oy0 + 16, rx1, base_y + 6], start=-55, end=62, fill=(251, 146, 60, 215), width=11)
+            draw.ellipse([tip_x - 22, base_y - 16, rx1, base_y + 10], outline=(255, 224, 71, 200), width=4)
+        elif fnum == 17:
+            # Coiled charge #3: Blinding compressed white-gold star flare on horizontal waist-chamber sword tip!
+            draw.ellipse([tip_x - 16, tip_y - 16, tip_x + 16, tip_y + 16], outline=(255, 240, 138, 225), width=3)
+            draw.line([(tip_x - 22, tip_y), (tip_x + 22, tip_y)], fill=(255, 255, 255, 220), width=3)
+            draw.line([(tip_x, tip_y - 22), (tip_x, tip_y + 22)], fill=(255, 255, 255, 220), width=3)
+        elif fnum == 18:
+            # Fast rocket lunge mid-thrust needle streak
+            draw.line([(tip_x, tip_y), (min(rx1, tip_x + 80), tip_y)], fill=(255, 244, 186, 195), width=7)
+        elif fnum == 19:
+            # HITSTOP #3: GIGANTIC full-arena golden-white piercing lance beam + double sonic rings!
+            draw.line([(tip_x, tip_y), (rx1, tip_y)], fill=(255, 255, 255, 230), width=12)
+            draw.line([(tip_x, tip_y - 10), (rx1 - 8, tip_y)], fill=(251, 182, 36, 200), width=5)
+            draw.line([(tip_x, tip_y + 10), (rx1 - 8, tip_y)], fill=(251, 182, 36, 200), width=5)
+            draw.ellipse([tip_x + 14, tip_y - 32, tip_x + 36, tip_y + 32], outline=(255, 224, 71, 205), width=4)
+            draw.ellipse([tip_x + 56, tip_y - 22, tip_x + 74, tip_y + 22], outline=(251, 146, 60, 195), width=3)
 
 
 def render_variable_action_guide(
@@ -337,7 +418,7 @@ def render_variable_action_guide(
             _stamp_splice_frame(img, splice_img, ox0, oy0, cell_w, cell_h, cx, base_y, sprite_h, pivot=splice_pivot, char_h_logical=char_h_logical, alpha_scale=0.62)
         elif (is_master_start or is_master_ghost) and anchor_img is not None:
             _stamp_ghost_anchor(img, anchor_img, cx, base_y, sprite_h, alpha_scale=0.46)
-        elif vfx in ("steel_horizontal_slash", "iaido_18f_master", "solar_18f_master"):
+        elif vfx in ("steel_horizontal_slash", "iaido_18f_master", "solar_18f_master", "tri_phase_24f_master"):
             _draw_combat_choreography_pose(draw, cx, base_y, oy0, ox1, sprite_h, vfx, fnum)
         else:
             head_r = int(sprite_h * 0.25)

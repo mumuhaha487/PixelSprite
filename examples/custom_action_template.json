@@ -12,11 +12,21 @@
   "anchor_x_ratio": 0.3125,
   "guide_x_ratio": 0.28,
   "guide_sprite_h_ratio": 0.42,
-  "timing_mode": "hitstop",
-  "frame_durations_ms": [90, 185, 55, 220, 95, 85, 85, 90],
+  "timing_mode": "tri_phase_power",
+  "frame_durations_ms": [85, 210, 55, 230, 80, 80, 80, 85],
+  "rhythm_beats": {
+    "1": "neutral",
+    "2": "charge_hold",
+    "3": "motion",
+    "4": "hitstop",
+    "5": "recovery",
+    "6": "recovery",
+    "7": "recovery",
+    "8": "recovery"
+  },
   "hold_tags": {
-    "2": "低伏蓄力",
-    "4": "升龙判定 HITSTOP"
+    "2": "低伏蓄力停顿",
+    "4": "升龙命中定帧"
   },
   "combat": {
     "startup_frames": [1, 2],

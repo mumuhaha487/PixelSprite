@@ -147,6 +147,43 @@ def validate_choreography(anim_spec: dict[str, Any]) -> dict[str, Any]:
                         "with ZERO chamber/preparation frame in between! Insert a prep/chamber frame (and expand total frame count / chained_parts)!"
                     )
 
+    # Tri-Phase Power Rhythm Law Check (v2.6): when timing_mode == 'tri_phase_power', verify charge_hold & hitstop & inter-move link_pause!
+    if anim_spec.get("timing_mode") == "tri_phase_power":
+        beats = {int(k): str(v) for k, v in anim_spec.get("rhythm_beats", {}).items()}
+        durations = anim_spec.get("frame_durations_ms", [])
+        if not beats:
+            issues.append("timing_mode='tri_phase_power' requires explicit `rhythm_beats` mapping (charge_hold / motion / hitstop / recovery / link_pause).")
+        else:
+            charge_frames = sorted(f for f, b in beats.items() if b == "charge_hold")
+            hitstop_frames = sorted(f for f, b in beats.items() if b == "hitstop")
+            if not charge_frames or not hitstop_frames:
+                issues.append("tri_phase_power animation must declare BOTH `charge_hold` (蓄力停顿) and `hitstop` (命中打击定帧) frames.")
+            for cf in charge_frames:
+                if cf <= len(durations) and durations[cf - 1] < 160:
+                    issues.append(f"Charge hold F{cf} duration ({durations[cf-1]}ms) is too short (<160ms) to convey heavy power!")
+            for hf in hitstop_frames:
+                if hf <= len(durations) and durations[hf - 1] < 160:
+                    issues.append(f"Hitstop freeze F{hf} duration ({durations[hf-1]}ms) is too short (<160ms) to convey strong impact!")
+
+    # Calm Grounded Splice Anchor Law Check (v2.6): multi-part splice bridges MUST NOT be active attacks or VFX-cluttered frames!
+    chained = anim_spec.get("chained_parts") or []
+    for part in chained:
+        sf = part.get("splice_from_prev_frame")
+        if sf:
+            s_idx = int(sf)
+            if s_idx in active_map:
+                issues.append(
+                    f"CALM SPLICE VIOLATION: Part '{part.get('name')}' splices on ACTIVE attack frame F{s_idx}! "
+                    "Move the splice point to a calm, grounded, full-height (34px), zero-VFX stance/link-pause frame!"
+                )
+            elif 1 <= s_idx <= len(choreo) and isinstance(choreo[s_idx - 1], dict):
+                vfx_s = str(choreo[s_idx - 1].get("vfx_meaning", "")).upper()
+                if "NONE" not in vfx_s and "ZERO" not in vfx_s and "CLEAN" not in vfx_s:
+                    issues.append(
+                        f"CALM SPLICE VIOLATION: Splice frame F{s_idx} has active VFX ('{vfx_s[:60]}...')! "
+                        "Splice frames MUST be calm grounded 34px zero-VFX stances to prevent Hurtbox bloat & X-teleports!"
+                    )
+
     return {"ok": len(issues) == 0, "structured": True, "frameCount": len(choreo), "issues": issues}
 
 
@@ -596,7 +633,7 @@ ANIMATION_SPECS: dict[str, dict[str, Any]] = {
                 "RETRACTING POSE: Right elbow bends pulling silver sword HALFWAY BACK toward right hip/chest (transitioning smoothly between F10 full extension and F12 reverse-grip hip sheath!); left hand lowers",
                 "Front foot plants firmly pushing weight back; rear foot steps slightly closer to center",
                 "Scarf eases off full horizontal tension beginning to wave",
-                "TRANSITION VFX: Horizontal pierce beam dissolves into 3 thin faint suspended cyan-white after-scars hanging quietly in mid-air ahead (up-diag + down-diag + horizontal)!"),
+                "NONE — horizontal pierce beam fully dissolved, pure clean grounded retracting sprite ensuring spotless Part 1 <-> Part 2 splice!"),
             _fb(12, "F12 ACTIVE HIT#4 — REVERSE-GRIP HIP SHEATH SNAP: 3 SCARS IGNITE! (收刀·三痕点亮)",
                 "Completes F11 pull-back: right hand snaps sword cleanly BACK behind hip in cool reverse-grip braking pose!",
                 "Cool composed stance, chin slightly tucked with fierce confident eyes watching the 3 scars ignite ahead",
@@ -651,9 +688,10 @@ ANIMATION_SPECS: dict[str, dict[str, Any]] = {
         ],
     },
     # ==========================================================================
-    # v2.5 HIGH-PRECISION 18-FRAME CHAINED ULTIMATE (4x3 Part 1 + 3x3 Part 2!)
-    # Smooth Takeoff -> Overhead Raise -> Dive Entry -> Dive Slash -> Ground Stab ->
-    # Flame Wave Eruption -> Wrench-Up Chamber -> Yank-Up Sweep -> Heroic Victory!
+    # v2.6 FIXED 18-FRAME CHAINED ULTIMATE (4x3 Part 1 + 3x3 Part 2!)
+    #   - Monotonic Airborne Parabola: 0 -> +7 (F4) -> +14 (F5) -> +20 APEX (F6) -> +12 (F7) -> +4 (F8) -> 0 SLAM (F9)
+    #   - Calm Grounded Zero-VFX Splice Anchor on F11 (Link Pause 1->2!) — ZERO Hurtbox bloat, ZERO X-teleport!
+    #   - Full Tri-Phase Power Rhythm: Charge Holds F3/F6/F12 -> Fast Motion F7/F13 -> Hitstop F9/F14 -> Clean Recovery!
     # ==========================================================================
     "ult_starfall_slash": {
         "id": "ult_starfall_slash",
@@ -669,149 +707,399 @@ ANIMATION_SPECS: dict[str, dict[str, Any]] = {
         "api_size": "1536x1024",
         "lock_body_x": False,
         "allow_airborne": True,
-        "max_lift_px": 26.0,
-        "anchor_x_ratio": 0.3125,
+        "max_lift_px": 22.0,
+        "anchor_x_ratio": 0.30,
         "guide_x_ratio": 0.29,
         "guide_sprite_h_ratio": 0.39,
-        "timing_mode": "hitstop",
-        "frame_durations_ms": [85, 80, 185, 60, 65, 165, 55, 70, 75, 275, 105, 130, 85, 80, 200, 80, 80, 85],
-        "hold_tags": {3: "燃剑蓄力", 6: "高空举剑定格", 10: "星炎爆发 HITSTOP", 11: "拔剑蓄力", 15: "持剑胜利定格"},
+        "timing_mode": "tri_phase_power",
+        "frame_durations_ms": [
+            80,  75, 190,  60,  60, 220,  55,  55, 245,  80, 135,  # F1..F11 (Move 1 Meteor Slam + Calm Link Pause F11!)
+            220, 55, 240,  80,  80,  80,  85,                      # F12..F18 (Move 2 Rising Flame Uppercut + Clean Recovery!)
+        ],
+        "rhythm_beats": {
+            1: "neutral",
+            2: "startup",    3: "charge_hold", 4: "motion",  5: "motion",  6: "charge_hold", 7: "motion", 8: "motion", 9: "hitstop", 10: "recovery", 11: "link_pause",
+            12: "charge_hold", 13: "motion", 14: "hitstop", 15: "recovery", 16: "recovery", 17: "recovery", 18: "recovery",
+        },
+        "hold_tags": {
+            3: "燃剑深蹲蓄力",
+            6: "高空顶点蓄力",
+            9: "流星贯地定帧",
+            11: "招间换气1→2",
+            12: "压膝炎挑蓄力",
+            14: "烈焰上挑定帧",
+        },
         "combat": {
-            "startup_frames": [1, 2, 3, 4, 5, 6, 7, 11],
+            "startup_frames": [2, 3, 4, 5, 6, 7, 12, 13],
+            "link_pause_frames": [11],
             "active_frames": {
-                8:  {"hitId": 1, "damage": 24, "hitstopMs": 60,  "knockback": [4.0,  3.5], "kind": "dive_slash",   "hitbox_mode": "forward_vfx", "label": "凌空陨落斜斩 HIT#1"},
-                9:  {"hitId": 2, "damage": 32, "hitstopMs": 80,  "knockback": [5.0, -3.0], "kind": "ground_slam",  "hitbox_mode": "forward_vfx", "label": "剑尖贯地重击 HIT#2", "same_continuous_motion": True},
-                10: {"hitId": 3, "damage": 65, "hitstopMs": 220, "knockback": [12.0,-5.5], "kind": "aoe_nova",     "hitbox_mode": "forward_vfx", "label": "星炎冲击波大爆发 MAX", "same_continuous_motion": True},
-                12: {"hitId": 4, "damage": 28, "hitstopMs": 75,  "knockback": [7.5, -4.5], "kind": "flame_surge",  "hitbox_mode": "forward_vfx", "label": "拔剑烈焰上挑 HIT#4"},
+                8:  {"hitId": 1, "damage": 28, "hitstopMs": 55,  "knockback": [4.5,  3.0], "kind": "dive_slash",   "hitbox_mode": "forward_vfx", "label": "临地流星急劈 HIT#1"},
+                9:  {"hitId": 2, "damage": 68, "hitstopMs": 245, "knockback": [11.5,-5.0], "kind": "aoe_nova",     "hitbox_mode": "forward_vfx", "label": "星炎贯地大爆发 HIT#2", "same_continuous_motion": True},
+                14: {"hitId": 3, "damage": 44, "hitstopMs": 240, "knockback": [8.5, -5.5], "kind": "flame_surge",  "hitbox_mode": "forward_vfx", "label": "烈焰裂空上挑 HIT#3"},
             },
-            "recovery_frames": [13, 14, 15, 16, 17, 18],
+            "recovery_frames": [10, 15, 16, 17, 18],
         },
         "vfx_hint": "solar_18f_master",
         "scroll_speed": 0,
         "view_prompt": "classic 2D side-scrolling 3/4 action RPG view, facing RIGHT consistently in every cell",
         "frame_choreography": [
-            _fb(1, "F1 STARTUP READY",
-                "Start neutral ready stance matching Reference Image 1",
-                "Neutral upright stance anchored in left third",
+            _fb(1, "F1 NEUTRAL ANCHOR",
+                "Exact Master Anchor pose initiating Meteor Ultimate",
+                "Neutral upright stance anchored in left third, full 34px chibi height",
                 "Right hand grips gleaming full silver sword at 35deg forward-up; left arm neutral",
                 "Both boots planted squarely on ground baseline",
-                "Scarf gently flowing left"),
+                "Red scarf & orange ponytail gently resting left"),
             _fb(2, "F2 STARTUP DEEP SPRING CROUCH",
-                "Knees bend low (-3px) while left hand moves across chest to join right hand on hilt",
-                "Low athletic spring-jump crouch (-3px), head tucked forward",
-                "TWO-HANDED GRIP: Both hands clasp sword hilt tightly in front of chest angling blade upward-right",
-                "Both knees deeply bent loading explosive vertical takeoff onto planted boots",
+                "From F1 standing guard, knees bend smoothly (-4px) while left hand joins right hand on hilt",
+                "Low athletic takeoff crouch (-4px), torso compact, eyes aiming upward-right",
+                "TWO-HANDED GRIP: Both hands clasp sword hilt in front of chest angling gleaming silver blade 50deg forward-up",
+                "Both knees bent deeply with boots flat and solid on exact ground baseline",
                 "Ponytail dips behind shoulders; scarf curls down",
-                "EARLY TELEGRAPH VFX (UNIFIED SOLAR-GOLD & FLAME): Tiny bright golden ember sparks flickering strictly along the raised sword blade"),
-            _fb(3, "F3 STARTUP BLADE IGNITION HOLD",
-                "Holds F2 deep crouch tightening core as golden star-fire wraps blade & ground pressure builds",
-                "Deepest coiled takeoff crouch (-3px), eyes glowing fiercely up-right",
-                "Both hands hold blazing golden-white sword angled forward-up charging solar fire onto blade",
-                "Both boots planted firmly inside compact ground air-pressure ring",
-                "Scarf & ponytail lifted gently upward by rising heat updraft",
-                "CHARGE TELEGRAPH VFX (SOLAR-GOLD ONLY): Blazing golden-white flame wrapping ONLY around sword blade + compact golden ground pressure ring under boots"),
-            _fb(4, "F4 STARTUP TAKEOFF EXTENSION",
-                "Legs explode straight downward pushing off floor launching toes off ground (+8px rising!)",
-                "Explosive vertical launch extending spine straight skyward (+8px off ground)",
-                "Both hands drive blazing golden sword upward-right leading launch",
-                "Front right knee begins tucking up; back left leg extends straight down leaving floor",
-                "Scarf & ponytail trail straight downward-left against upward surge",
-                "TAKEOFF VFX: Crisp white-tan ground jump-dust ring erupting flat on floor directly below takeoff spot + golden trail off rising blade"),
-            _fb(5, "F5 STARTUP RISING ASCENT",
-                "Continues soaring higher (+18px airborne!) as both hands lift blazing sword overhead toward back-arch",
-                "Soaring upward (+18px airborne!), chest opening proudly toward sky",
-                "Both hands lift blazing golden sword high above head beginning to pull it behind shoulders",
-                "Both knees tucked cleanly in athletic mid-air jump posture high off ground",
-                "Scarf & ponytail trailing straight down-left",
-                "ASCENT VFX: Golden flame aura intensifying cleanly around the rising overhead sword blade (floor below completely clean)"),
-            _fb(6, "F6 STARTUP AERIAL APEX — OVERHEAD METEOR RAISE HOLD (高空举剑蓄力定格!)",
-                "Reaches jump apex (+22px airborne!) arching spine back & cocking blazing sword high behind head!",
-                "High airborne apex (+22px!), spine arched boldly BACKWARD like a drawn bow poised to smash down!",
-                "UNMISTAKABLE OVERHEAD RAISE: BOTH HANDS hold blazing golden-white sword HIGH BEHIND HER HEAD pointing up-back, gathering dense solar fire!",
-                "Dynamic mid-air bent-knee suspension cleanly high above ground",
-                "Scarf & ponytail fanned dramatically behind-left at zero-gravity peak",
-                "OVERHEAD METEOR CHARGE VFX (UNIFIED SOLAR-GOLD & FLAME): Radiant golden-white solar flame aura + bright 4-point star flare concentrating strictly around her raised overhead sword blade!"),
-            _fb(7, "F7 SUB-PREP DIVE ENTRY (凌空下劈起势)",
-                "From F6's back-arched apex, torso snaps aggressively forward pitching head-first into downward dive while sword swings over crown!",
-                "Pivoting sharply forward-downward (+18px -> accelerating down!) torso snapping forward",
-                "Both hands whip blazing golden sword forward past the top of her head starting the descending meteor arc!",
-                "Legs kick back-upward behind her plunging center of mass",
-                "Scarf & ponytail whip straight UPWARD-LEFT opposite to downward plunge!",
-                "DIVE ENTRY VFX: Leading streak of white-gold solar fire beginning to arc forward-downward from her accelerating overhead blade tip"),
-            _fb(8, "F8 ACTIVE HIT#1 — AERIAL METEOR DIVE-SLASH (凌空陨落斜斩)",
-                "Continues F7 dive plunge (+10px descending rapidly!) sweeping sword diagonally down-right across front!",
-                "Plunging aggressively forward-downward toward ground baseline!",
-                "METEOR DIVE-SLASH: Both hands swing blazing golden sword violently OVERHEAD-TO-FORWARD-DOWNWARD in a giant descending cleave!",
-                "Legs trailing cleanly behind her rapid downward dive",
-                "Scarf & ponytail stream straight upward-left",
-                "HIT#1 METEOR DIVE VFX (SOLAR-GOLD, FLAME-ORANGE & CRIMSON): HUGE blazing golden-white -> flame-orange -> crimson curving meteor crescent sweeping diagonally from overhead down-right directly along her plunging sword!"),
-            _fb(9, "F9 ACTIVE HIT#2 — SWORD-STABBED-INTO-GROUND SLAM! (剑尖贯地重击)",
-                "Completes F8 downward plunge slamming BOTH boots onto ground and driving sword point-first straight into floor!",
-                "SLAMMED SQUARELY ONTO GROUND (-3px deep superhero impact crouch!), head fiercely lowered",
-                "GROUND-STAB POSE: Both hands drive gleaming silver sword POINT-FIRST STRAIGHT DOWN INTO THE GROUND directly in front of right boot!",
-                "Deep heroic 1-knee ground-slam stance — both boots firmly planted back on ground baseline absorbing impact",
-                "Ponytail & scarf whipped violently upward then outward from impact",
-                "HIT#2 GROUND-SLAM VFX (SOLAR-GOLD & FLAME): Blinding pure-white & golden vertical impact flash + radial cracking fire sparks & billowing ground shockwave dust erupting directly from the exact sword stab point!"),
-            _fb(10, "F10 ACTIVE HIT#3 CLIMAX HITSTOP — SOLAR FLAME WAVE ERUPTION (星炎冲击波大爆发)",
-                "Locks F9's dramatic sword-in-ground crouch rock-steady as the ground impact detonates forward into roaring flame wave!",
-                "Locked firmly in low sword-planted-in-ground pose bracing against roaring blast ahead",
-                "Right hand grips hilt of sword planted straight down in floor; left hand braces near knee",
-                "Deep braced heroic crouch planted solidly on ground baseline",
-                "Red scarf & ponytail blasted furiously straight BACKWARD-LEFT by roaring blast!",
-                "HIT#3 CLIMAX ERUPTION VFX (UNIFIED SOLAR-GOLD, BLAZING ORANGE & CRIMSON): MASSIVE forward-surging wave of blazing golden-white & flame-orange solar eruption pillars, ground-ripping flame shockwave & rolling dust erupting directly from her planted sword across the right two-thirds!"),
-            _fb(11, "F11 SUB-PREP — WRENCH-UP CHAMBER (拔剑蓄力前摇!!)",
-                "CRITICAL SUB-ANTICIPATION FROM F10 GROUND-STAB: Still crouched low, BOTH knees press down & shoulders twist pulling upward tension onto the embedded hilt BEFORE ripping the sword out on F12!",
-                "Deep tense crouched stance leaning slightly back-left pulling hard on the embedded sword hilt",
-                "WRENCH-UP CHAMBER POSE: Right hand grips hilt tightly with bent elbow pulling upward strain (blade STILL angled low touching the cracked ground, NOT yanked up yet!); left arm pulls back for leverage",
-                "Both boots braced hard into floor pushing legs to stand up explosively",
-                "Scarf & ponytail settle slightly then tense behind",
-                "CHAMBER VFX: F10's giant flame wave subsides into glowing orange embers & warm ground smoke curling around the still-planted blade tip (telegraphs imminent upward yank-out!)"),
-            _fb(12, "F12 ACTIVE HIT#4 — YANKING SWORD UP OUT OF FLOOR (拔剑烈焰上挑)",
-                "From F11's tense wrench-coil, legs & spine surge upward-right ripping sword violently UPWARD out of floor!",
-                "Torso surges upward-right springing powerfully out of ground-slam crouch!",
-                "SWORD YANK-UP: Right arm rips gleaming silver sword violently UPWARD-RIGHT out of the floor in a fierce rising sweep; left arm pulls back",
-                "Front right knee straightening from lunge; rear left boot pushing firmly on floor",
-                "Scarf whips cleanly down-left as she rises",
-                "HIT#4 RISING FLAME VFX (SOLAR-GOLD & FLAME): Sweeping upward curtain of blazing golden-orange flame arcs & soaring embers surging upward-right directly off her yanked-up blade!"),
-            _fb(13, "F13 RECOVERY — SHAKE OFF EMBERS",
-                "Smooth deceleration from F12 upward yank: stands tall swinging blade lightly forward-right to clear embers",
-                "Standing upright smoothly, breathing steady, relaxing combat tension",
-                "Right arm swings clean silver sword gently outward-right shaking off final fire sparks; left arm relaxed",
-                "Feet stepping smoothly back into balanced standing stance on baseline",
-                "Scarf & ponytail swinging gently into calm motion",
-                "DISSIPATION VFX: Flame curtain gone — only 5 small cooling orange-gold embers & faint dust wisp drifting upward-right"),
-            _fb(14, "F14 RECOVERY — CLEAN BLADE RISE",
-                "Smoothly lifts clean silver sword from F13 outward shake into vertical victory presentation",
-                "Upright poised standing stance, chin lifting proudly",
-                "Right wrist smoothly rotates clean gleaming silver sword upward toward skyward victory flourish",
-                "Both boots planted cleanly on baseline",
-                "Scarf billowing gently left; ponytail bouncing softly"),
-            _fb(15, "F15 RECOVERY — HEROIC VICTORY FLOURISH HOLD",
-                "Locks F14 upright flourish in proud triumphant JRPG victory pause!",
-                "Standing tall & proud (+1px chest proud!), warm confident smile",
-                "Right arm holds gleaming full silver sword proudly angled 60deg forward-up; left hand on hip",
-                "Confident heroic standing stance cleanly grounded on baseline",
-                "Red scarf billows majestically left; ponytail buoyant",
-                "VICTORY PUNCTUATION VFX: 2 crisp clean golden-white 4-point blade-glint stars twinkling right on the clean silver sword blade"),
-            _fb(16, "F16 RECOVERY — LOWER TO GUARD",
-                "Relaxes smoothly out of F15 victory flourish lowering sword arm down toward ready angle",
-                "Relaxing smoothly back toward neutral Cell 1 height",
-                "Right arm lowers full silver sword halfway back toward 35deg neutral guard; left hand drops from hip",
-                "Boots settle smoothly back into neutral Cell 1 spacing",
-                "Scarf & ponytail relaxing gently"),
-            _fb(17, "F17 RECOVERY — SETTLE GUARD",
-                "Brings sword squarely into exact 35deg neutral guard from F16",
+                "EARLY IGNITION VFX: 3 tiny bright golden sparks flickering strictly on the raised sword blade (ZERO marks below boots!)"),
+            _fb(3, "F3 CHARGE HOLD #1 — COILED BLADE IGNITION (190ms)",
+                "Deepens F2 crouch slightly (-5px) and FREEZES to ignite full blade with golden solar fire before jump!",
+                "Deepest coiled takeoff squat (-5px), determined glowing gaze up-right",
+                "Both hands hold blazing solar-gold sword angled 50deg forward-up tightly before chest",
+                "Both brown boots planted rock-solid flat on EXACT ground baseline (NEVER draw any ring below boot soles!)",
+                "Scarf & ponytail lifted gently by heat updraft",
+                "CHARGE VFX (SOLAR-GOLD ON BLADE ONLY): Crisp blazing white-gold solar flame wrapping strictly around the sword blade — KEEP GROUND UNDER BOOTS 100% CLEAN!"),
+            _fb(4, "F4 FAST LAUNCH — TAKEOFF (+7px LIFT)",
+                "Explodes upward out of F3 crouch leaving ground (+7px lift!) while driving blazing sword diagonally forward-up",
+                "Rising cleanly off ground (+7px lift!), spine extending straight upward",
+                "Both hands hold blazing golden sword angled 62deg forward-up ahead of forehead (NOT behind head yet!)",
+                "Front right knee lifting up; rear left boot pushing off leaving visible gap above ground baseline",
+                "Scarf & ponytail trailing downward-left against upward launch",
+                "TAKEOFF VFX: Small crisp white-tan dust puff flat on floor directly below takeoff point + golden blade flame"),
+            _fb(5, "F5 FAST ASCENT — MID-AIR RISE (+14px LIFT)",
+                "Continues smooth climb from F4 (+7px -> +14px lift!) raising blazing sword straight VERTICAL above crown!",
+                "Clearly higher mid-air (+14px lift!), chest opening toward sky, distinct intermediate height below F6 apex",
+                "STRAIGHT VERTICAL RAISE: Both hands lift blazing golden sword straight up at 90deg directly above top of head (CLEARLY distinct from F4 forward & F6 behind-head!)",
+                "Both knees tucked cleanly mid-air well above ground baseline",
+                "Scarf & ponytail streaming straight downward-left",
+                "ASCENT VFX: Bright golden flame wrapping cleanly around the straight vertical overhead blade (empty air below boots)"),
+            _fb(6, "F6 CHARGE HOLD #2 — TRUE AERIAL APEX (+20px HIGHEST! 220ms)",
+                "Reaches HIGHEST aerial apex (+20px — visibly HIGHER than F5!) arching spine backward & cocking sword behind head!",
+                "HIGHEST AIRBORNE APEX (+20px above floor!), spine arched dramatically BACKWARD like a drawn bow!",
+                "FULL OVERHEAD COCK-BACK: Both hands pull blazing golden-white sword HIGH BEHIND HER HEAD at -138deg (10 o'clock) gathering massive solar meteor energy!",
+                "Dynamic mid-air bent-knee hang at peak altitude — maximum clean empty space below boots!",
+                "Scarf & ponytail fanned wide behind-left at zero-gravity peak",
+                "APEX CHARGE VFX (UNIFIED SOLAR-GOLD & WHITE): Blazing circular solar-gold sun-halo & 4-point star flare concentrating strictly around the raised sword blade behind head!"),
+            _fb(7, "F7 FAST DIVE — MID-AIR PLUNGE (+12px LIFT, 55ms)",
+                "Drops smoothly from F6 apex (+20px -> +12px lift!), snapping torso sharply forward as both hands whip sword over forehead!",
+                "Descending fast mid-air (+12px lift — halfway down!), torso curling aggressively forward-downward",
+                "Both hands whip blazing golden sword rapidly forward past brow (-25deg) launching downward meteor arc",
+                "Legs trailing cleanly upward-back behind diving torso",
+                "Scarf & ponytail whipping straight UPWARD opposite to downward drop",
+                "DIVE STREAK VFX: Tight blazing white-gold & orange downward speed-arc trailing the plunging blade"),
+            _fb(8, "F8 ACTIVE HIT#1 — LOW-AIR METEOR CLEAVE (+4px LIFT, 55ms)",
+                "Continues F7 smooth descent (+12px -> +4px just above floor — ZERO vertical teleport!) sweeping huge fiery diagonal cleave!",
+                "Just above landing (+4px lift!), torso pitched low forward swinging down with full momentum",
+                "METEOR CLEAVE: Both hands drive blazing sword steeply forward-downward (+38deg) cleaving right across front!",
+                "Front right boot reaching smoothly down toward ground baseline preparing solid landing",
+                "Scarf & ponytail streaming high behind-left",
+                "HIT#1 METEOR CLEAVE VFX (SOLAR-GOLD & FLAME-ORANGE): Wide blazing curving golden-orange meteor crescent sweeping from upper-front down to ground-front along her descending blade!"),
+            _fb(9, "F9 ACTIVE HITSTOP #2 — GROUND SLAM & FLAME WAVE CLIMAX (0px FLOOR, 245ms)",
+                "Lands smoothly from F8 (+4px -> 0px solid ground!) stabbing sword point-first into floor & FREEZING as huge solar flame wave erupts forward!",
+                "Solid heroic deep ground-slam crouch (-5px crouch, boots firmly on floor baseline!), fierce expression",
+                "GROUND-STAB POSE: Both hands drive gleaming sword steeply down-forward (+78deg) point-first into ground right ahead of front boot (full silver blade clearly visible!)",
+                "Wide braced superhero 1-knee landing stance planted firmly on ground baseline",
+                "Red scarf & orange ponytail blasted sharply BACKWARD-LEFT by forward eruption!",
+                "HIT#2 CLIMAX ERUPTION VFX (UNIFIED SOLAR-GOLD, BLAZING ORANGE & WHITE CORE): Blinding white-gold impact pillar at sword tip detonating into a MASSIVE roaring forward-surging flame wave across the right half of the wide arena!"),
+            _fb(10, "F10 RECOVERY — LIFT BLADE & FLAME FADE (80ms)",
+                "Unwinds smoothly out of F9 deep slam: front knee pushes body upward while lifting clean silver blade off floor as flames subside",
+                "Rising smoothly back toward upright posture (-2px), shoulders unwinding calmly",
+                "Right hand pulls gleaming full silver sword smoothly up off floor to calm low-horizontal waist level (+12deg); left hand releases hilt",
+                "Rear boot steps forward naturally narrowing stance toward shoulder-width on baseline",
+                "Scarf & ponytail drifting gently down from blast",
+                "DISSIPATION VFX: Giant flame wave completely gone — only 3 tiny fading golden embers drifting right (cleanly prepares calm F11 splice!)"),
+            _fb(11, "F11 LINK PAUSE 1->2 — CALM GROUNDED 34px POISE (135ms) [SPLICE ANCHOR!]",
+                "Completes F10 rise into a ROCK-SOLID, CALM, GROUNDED, FULL-HEIGHT 34px ZERO-VFX martial breath pause separating Move 1 from Move 2!",
+                "Calm grounded upright 34px full-height martial stance anchored cleanly in left third, alert focused gaze right",
+                "Right hand holds clean gleaming full silver sword steady at calm low-forward ready angle (-26deg); left fist poised at waist",
+                "Both brown boots planted solidly shoulder-width on exact ground baseline",
+                "Red scarf & orange ponytail calm and neatly draped left",
+                "NONE — pure clean 34px character sprite, ZERO VFX, ZERO floor embers, ZERO dust (ensures spotless Part 1 <-> Part 2 splice!)"),
+            _fb(12, "F12 CHARGE HOLD #3 — LOW-KNEE FLAME UPPERCUT CHAMBER (220ms)",
+                "Breaks cleanly from F11 calm pause by dropping deep into coiled low-knee squat pulling sword back behind right hip & FREEZING to charge rising uppercut!",
+                "Deep coiled squat (-6px crouch), shoulders twisted back storing explosive upward torque",
+                "BOTH hands locked tightly on hilt pulled far low-back behind right hip (+158deg), blade tip igniting with condensed golden flame",
+                "Wide grounded power squat firmly planted on exact baseline",
+                "Scarf & ponytail pulled taut behind coiled shoulders",
+                "UPPERCUT CHARGE VFX: Tight radiant white-gold solar spark pulsing strictly around the retracted sword tip (ZERO marks below boots!)"),
+            _fb(13, "F13 FAST MOTION — EXPLOSIVE UPWARD FLAME WHIP (55ms)",
+                "Explodes upward out of F12 coiled squat whipping blazing sword violently forward-upward at mid-waist height!",
+                "Torso surging explosively upward & forward (+5px rise), chest opening powerfully",
+                "Right arm whips gleaming blazing sword rapidly forward-upward through horizontal-mid arc (+15deg); left arm trailing back for counterweight",
+                "Back boot driving hard off floor while front knee straightens explosively",
+                "Scarf & ponytail whipping sharply downward-left trailing rapid upward rise",
+                "FAST WHIP VFX: Crisp blazing pale-gold & flame-orange curved motion smear hugging the rapidly rising blade edge"),
+            _fb(14, "F14 ACTIVE HITSTOP #3 — RISING SOLAR FLAME UPPERCUT CLIMAX (240ms)",
+                "Completes F13 explosive upward whip to towering 1 o'clock full extension & FREEZES on peak rising flame cleave!",
+                "Tall stretched heroic uppercut extension, chest thrust forward-right, fierce battle shout",
+                "Right arm extended high overhead holding gleaming silver sword soaring at -65deg (1 o'clock); left arm swept low-back for balance",
+                "Front right boot planted rock-solid forward, rear boot balanced on toe absorbing upward recoil",
+                "Red scarf & orange ponytail streaming dramatically downward-back",
+                "HIT#3 RISING FLAME VFX (UNIFIED SOLAR-GOLD, BLAZING ORANGE & WHITE CORE): Towering sweeping molten-gold & flame-orange rising uppercut crescent surging from low-front up to high-front right off her blade!"),
+            _fb(15, "F15 RECOVERY 1 — APEX DECELERATION (80ms)",
+                "Relaxes naturally out of F14 peak extension as sword coasts gently near vertical overhead and flame arc fades",
+                "Torso easing down smoothly from stretched apex to balanced upright height",
+                "Right hand lets clean silver sword ease gently near vertical overhead while elbow begins bending smoothly",
+                "Rear heel settles cleanly flat onto ground baseline",
+                "Scarf & ponytail drifting gently down from upward whip",
+                "DISSIPATION VFX: Flame crescent gone — only 4 tiny fading golden-orange sparks drifting upward-right"),
+            _fb(16, "F16 RECOVERY 2 — LOWER TO GUARD (80ms)",
+                "Smoothly lowers clean silver sword from F15 apex follow-through halfway down toward chest-right ready guard",
+                "Calm upright neutral standing posture matching Cell 1 height",
+                "Right arm bends cleanly lowering full gleaming silver sword to 42deg forward-up; left arm relaxing to waist",
+                "Both boots stepping smoothly into exact Cell 1 shoulder-width spacing",
+                "Scarf & ponytail settling calmly left"),
+            _fb(17, "F17 RECOVERY 3 — GUARD SETTLE (80ms)",
+                "Brings sword squarely into exact 35deg Cell 1 neutral ready guard from F16",
                 "Calm neutral ready posture nearly identical to Cell 1",
                 "Full silver sword held steady at exact 35deg Cell 1 guard angle",
                 "Both boots planted cleanly in exact Cell 1 neutral spacing",
                 "Scarf & ponytail calm"),
-            _fb(18, "F18 PRE-LOOP BRIDGE",
-                "95% identical to Cell 1 bridging seamlessly into Ghost F19 (=F1)",
+            _fb(18, "F18 PRE-LOOP BRIDGE (85ms)",
+                "96% identical to Cell 1 bridging seamlessly into Ghost F19 (=F1)",
                 "Neutral upright ready posture matching Cell 1",
-                "Full silver sword at exact 35deg Cell 1 angle",
+                "Full silver sword at exact 35deg Cell 1 guard angle",
                 "Both boots planted cleanly in exact Cell 1 stance",
-                "Scarf & ponytail 95% identical to Cell 1"),
+                "Scarf & ponytail 96% identical to Cell 1"),
             _fb(19, "GHOST LOOP = F1",
+                "100% identical to Cell 1 closed-loop anchor",
+                "100% IDENTICAL TO CELL 1 — neutral upright ready stance in left third",
+                "100% IDENTICAL TO CELL 1 — full silver sword at 35deg forward-up",
+                "100% IDENTICAL TO CELL 1 — both boots planted shoulder-width",
+                "100% IDENTICAL TO CELL 1 — scarf and ponytail exact match"),
+        ],
+    },
+    # --------------------------------------------------------------------------
+    # 7. EX SKILL Q — TRI-PHASE POWER RHYTHM 24-FRAME MASTERPIECE COMBO (24+1f = 5x5!)
+    #    3-Part Seamless Chained Sheet (3x3 Part1 + 3x3 Part2 + 4x3 Part3):
+    #      Move 1 (F1..F8):  Wind-up -> CHARGE HOLD #1 (220ms) -> Fast Swing (55ms) -> HITSTOP #1 (230ms) -> Normal Recovery (80/85ms) -> LINK PAUSE 1->2 (140ms)
+    #      Move 2 (F9..F14): Takeoff -> AIRBORNE CHARGE HOLD #2 (230ms) -> Fast Dive (55ms) -> HITSTOP #2 (245ms) -> Normal Recovery (85ms) -> LINK PAUSE 2->3 (140ms)
+    #      Move 3 (F15..F24): Chamber Entry -> Coil -> MAX CHARGE HOLD #3 (255ms) -> Fast Lunge (50ms) -> HITSTOP #3 (275ms) -> Normal Recovery (80-85ms x5) -> Loop F25=F1
+    # --------------------------------------------------------------------------
+    "skill_tri_phase_breaker": {
+        "id": "skill_tri_phase_breaker",
+        "name": "Q·三段蓄力破势连斩 (24帧三段力量节拍)",
+        "key": "EX Q",
+        "grid": [5, 5],
+        "api_size": "1536x1024",
+        "active_frames": 24,
+        "closed_loop": True,
+        "chained_parts": [
+            # Part 1 (3x3 @ 1536x1024 = 512x341/cell!): Move 1 complete + Link Pause F8 + F9 preview!
+            {"name": "part1", "grid": [3, 3], "api_size": "1536x1024", "frame_indices": [1, 2, 3, 4, 5, 6, 7, 8, 9], "drop_last": 1},
+            # Part 2 (3x3 @ 1536x1024 = 512x341/cell!): Splice F8 (calm grounded 34px!) -> Move 2 complete + Link Pause F14 + F15/F16 previews!
+            {"name": "part2", "grid": [3, 3], "api_size": "1536x1024", "frame_indices": [8, 9, 10, 11, 12, 13, 14, 15, 16], "splice_from_prev_frame": 8, "drop_last": 2},
+            # Part 3 (4x3 @ 1536x1024 = 384x341/cell!): Splice F14 (calm grounded 34px!) -> Move 3 Finisher + Recovery + Ghost F25 (=F1)!
+            {"name": "part3", "grid": [4, 3], "api_size": "1536x1024", "frame_indices": [14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25], "splice_from_prev_frame": 14, "end_anchor": "master", "drop_last": 0},
+        ],
+        "timing_mode": "tri_phase_power",
+        # Exact Tri-Phase Power Rhythm tuned to Move 2's crisp sweet spot (Charge Hold 220-230ms | Fast Motion 50-55ms | Hitstop 230-245ms | Normal Recovery 75-85ms | Inter-Move Link Pause 135ms!)
+        "frame_durations_ms": [
+            80,  85, 220,  55, 230,  80,  85, 135,   # F1..F8  (Move 1 + Link Pause 1->2)
+            75, 230,  55, 245,  85, 135,             # F9..F14 (Move 2 + Link Pause 2->3)
+            70,  65, 225,  50, 240,  75,  75,  80,  80,  80,  # F15..F24 (Move 3 Finisher tuned crisp like Move 2!)
+        ],
+        "rhythm_beats": {
+            1: "neutral",
+            2: "startup",      3: "charge_hold", 4: "motion",  5: "hitstop",  6: "recovery", 7: "recovery", 8: "link_pause",
+            9: "startup",     10: "charge_hold",11: "motion", 12: "hitstop", 13: "recovery",14: "link_pause",
+            15: "startup",    16: "startup",    17: "charge_hold",18: "motion",19: "hitstop",20: "recovery",21: "recovery",22: "recovery",23: "recovery",24: "recovery",
+        },
+        "hold_tags": {
+            3: "一招蓄力停顿",
+            5: "一招上挑定帧",
+            8: "招间换气1→2",
+            10: "二招滞空蓄力",
+            12: "二招砸地定帧",
+            14: "招间换气2→3",
+            17: "终结收腰死蓄",
+            19: "终结贯通定帧",
+        },
+        "scroll_speed": 0,
+        "lock_body_x": False,
+        "allow_airborne": True,
+        "max_lift_px": 24.0,
+        "anchor_x_ratio": 0.28,
+        "guide_x_ratio": 0.28,
+        "guide_sprite_h_ratio": 0.38,
+        "vfx_hint": "tri_phase_24f_master",
+        "combat": {
+            "startup_frames": [2, 3, 4, 9, 10, 11, 15, 16, 17, 18],
+            "link_pause_frames": [8, 14],
+            "active_frames": {
+                5:  {"hitId": 1, "damage": 28, "hitstopMs": 230, "knockback": [4.5, -5.5], "hitbox_mode": "forward_vfx", "kind": "melee_arc", "label": "一招·裂空上挑定帧"},
+                12: {"hitId": 2, "damage": 36, "hitstopMs": 245, "knockback": [6.0, 2.5],  "hitbox_mode": "aoe_nova",    "kind": "slam_aoe",  "label": "二招·陨铁砸地定帧"},
+                19: {"hitId": 3, "damage": 58, "hitstopMs": 240, "knockback": [11.5, -1.5],"hitbox_mode": "forward_vfx", "kind": "pierce_beam","label": "终结·烈钢贯通定帧"},
+            },
+            "recovery_frames": [6, 7, 13, 20, 21, 22, 23, 24],
+        },
+        "frame_choreography": [
+            # --- MOVE 1: Heavy Coiled Uppercut Cleave (F1..F8) ---
+            _fb(1, "F1 IDLE ANCHOR",
+                "Exact Master Anchor pose initiating Move 1",
+                "Upright neutral ready stance in left third, full 34px chibi height, alert expression",
+                "Right hand grips gleaming full silver sword angled 35deg forward-up; left fist ready at waist",
+                "Both brown boots planted shoulder-width on baseline",
+                "Red scarf & orange ponytail resting naturally to the left"),
+            _fb(2, "F2 MOVE 1 ENTRY — DROP WEIGHT",
+                "From F1 upright stance, knees bend downward and right arm swings sword down behind hip",
+                "Lowering torso (-3px) while rotating right shoulder back to prepare deep coil",
+                "Right hand drops silver sword diagonally down-back behind right hip; left hand reaches across toward hilt",
+                "Front right boot plants forward as left rear knee flexes deeply",
+                "Scarf & ponytail swing slightly upward-right from downward body drop"),
+            _fb(3, "F3 MOVE 1 CHARGE HOLD — COILED SQUAT (220ms)",
+                "Deepens F2 drop into MAXIMUM coiled squat tension and FREEZES to build heavy power!",
+                "Lowest heavy coiled squat (-6px), chest hunched over knees, intense narrowed focused eyes",
+                "BOTH hands locked tightly on sword hilt pulled far low-back behind right hip, silver blade flat pointing back-down",
+                "Wide low power squat: both boots dug firmly into ground bracing explosive upward spring",
+                "Scarf & ponytail pulled taut close behind coiled back",
+                "CHARGE TENSION VFX: Tight radiant white-gold energy glint pulsing around sword crossguard + small white-tan dust puff beneath back boot showing massive stored spring force"),
+            _fb(4, "F4 MOVE 1 FAST MOTION — EXPLOSIVE UP-SWING (55ms)",
+                "Explodes violently upward out of F3 coiled squat whipping sword fast from low-back through knee level forward!",
+                "Body surging explosively upward & forward (+6px rise), chest opening dramatically",
+                "Right arm whips full silver sword rapidly forward-upward at mid-waist height (20deg) mid-acceleration; left arm trailing back for torque",
+                "Back leg driving straight off ground, front knee straightening rapidly in explosive launch",
+                "Scarf & ponytail whipping sharply downward-left trailing explosive upward surge",
+                "MOTION BLUR VFX: Crisp fast pale-gold & white curved kinetic smear ribbon hugging the rapidly rising silver blade edge"),
+            _fb(5, "F5 MOVE 1 HITSTOP — RISING UPPERCUT CLEAVE (230ms)",
+                "Completes F4 explosive upward arc to towering 1 o'clock full extension and FREEZES on peak impact!",
+                "Tall stretched triumphant uppercut extension, chest thrust forward-right, fierce shout expression",
+                "Right arm extended high overhead holding gleaming sword soaring at -68deg (1 o'clock) pointing up-forward; left arm swung low behind for counterweight",
+                "Front right boot planted rock-solid forward, rear boot balanced on toe absorbing upward recoil",
+                "Scarf & ponytail streaming dramatically downward-back",
+                "HIT#1 IMPACT VFX: Towering wide molten-gold & blazing white crescent uppercut slash sweeping from floor-front up to high-front + sharp white 4-point impact cross-spark bursting at upper apex!"),
+            _fb(6, "F6 MOVE 1 RECOVERY 1 — APEX DECELERATION",
+                "Relaxes naturally out of F5 peak extension as sword coasts slightly past top and slash dissipates",
+                "Torso easing down from stretched apex to balanced upright height",
+                "Right hand lets sword ease gently near vertical overhead while elbow begins bending naturally",
+                "Rear heel settles flat onto ground baseline; stable martial stance",
+                "Scarf & ponytail drifting gently down from apex whip",
+                "DISSIPATION VFX: Main crescent gone — only 4 tiny fading golden-white kinetic sparks floating near upper tip"),
+            _fb(7, "F7 MOVE 1 RECOVERY 2 — LOWER GUARD",
+                "Smoothly lowers sword arm from F6 high follow-through back down to chest-right guard",
+                "Balanced upright torso settling calmly over hips",
+                "Right arm bends cleanly bringing silver sword down to chest-right diagonal guard; left hand returning to waist",
+                "Both boots stepping smoothly into crisp shoulder-width balance on baseline",
+                "Scarf & ponytail settling calmly to the left"),
+            _fb(8, "F8 LINK PAUSE 1->2 — BREATH & STANCE RESET (140ms) [SPLICE #1]",
+                "Holds F7 calm upright martial poise for a crisp 140ms breathing pause before launching Move 2!",
+                "Calm grounded upright 34px martial stance (exact full height!), shoulders relaxed yet focused, eyes locked right",
+                "Right hand holds full clean silver sword steady at calm low-forward ready angle (-25deg); left fist poised near waist",
+                "Both brown boots planted solidly shoulder-width on baseline — clean grounded stance",
+                "Red scarf & orange ponytail calm and gently draped left"),
+            # --- MOVE 2: Leaping Overhead Meteor Slam (F9..F14) ---
+            _fb(9, "F9 MOVE 2 TAKEOFF — LEAP & HOIST SWORD",
+                "Breaks directly out of F8 calm breath pause by springing off ground into air while hoisting sword vertically!",
+                "Airborne rising (+9px lift off ground!), torso stretching upward with fierce determination",
+                "BOTH hands gripping hilt hoisting gleaming full silver sword straight skyward above forehead (-88deg)",
+                "Boots tucked neatly underneath as knees drive upward off floor baseline",
+                "Scarf & ponytail trailing straight downward beneath leaping body",
+                "TAKEOFF VFX: Crisp small white-tan jump-burst dust ring right on ground floor beneath her launching boots"),
+            _fb(10, "F10 MOVE 2 CHARGE HOLD — AIRBORNE APEX OVERHEAD (230ms)",
+                "Reaches highest aerial apex (+20px lift!) from F9, arching back dramatically and FREEZING mid-air with sword cocked behind head!",
+                "HIGH AIRBORNE APEX (+20px above ground!), back arched dramatically backward like a drawn bow, fierce battle expression",
+                "BOTH hands locked on hilt hoisting gleaming sword high behind head at -140deg (10 o'clock) ready to cleave earth!",
+                "Knees tucked dynamically mid-air high above baseline — clear generous empty air gap below boots!",
+                "Scarf & ponytail floating dramatically outward behind arched back",
+                "AIRBORNE CHARGE VFX: Blazing circular solar-gold energy halo & bright white star-core condensing tightly around the raised sword blade overhead!"),
+            _fb(11, "F11 MOVE 2 FAST MOTION — AIRBORNE METEOR DIVE (55ms)",
+                "Plummets rapidly downward from F10 apex (+10px lift), curling torso violently forward as both hands whip blade down past brow!",
+                "Dropping fast downward & forward (+10px lift), torso pitched steeply forward at 35deg",
+                "BOTH hands accelerating glowing gold-edged silver sword sharply downward-forward past forehead (-15deg)",
+                "Legs unfolding downward preparing to slam onto ground baseline",
+                "Scarf & ponytail whipping straight UPWARD trailing rapid downward drop",
+                "DIVE SPEED VFX: Tight blazing amber-gold & white downward motion streak tracing the falling blade arc"),
+            _fb(12, "F12 MOVE 2 HITSTOP — HEAVY METEOR GROUND-SLAM (245ms)",
+                "Slams boots violently onto floor from F11 dive and drives sword tip straight down into ground — FREEZING on thunderous impact!",
+                "Deep heavy ground-slam lunge (-6px crouch), shoulders driven low forward, intense impact grit",
+                "BOTH hands slamming sword blade steeply down-forward (+52deg) into the ground directly in front of front boot",
+                "Wide heavy impact split lunge: front right knee deeply bent planted flat, rear boot braced firmly far back",
+                "Scarf & ponytail blown sharply UP-LEFT by ground shockwave blast",
+                "HIT#2 IMPACT VFX: Huge towering vertical molten-gold & fiery-orange downward cleave shockwave + explosive bright-white ground-impact burst & crisp flying rock/ember sparks shooting right along floor!"),
+            _fb(13, "F13 MOVE 2 RECOVERY — RECOIL & RISE",
+                "Rebounds cleanly upward out of F12 ground slam as front knee pushes torso upright and blade lifts off floor",
+                "Rising smoothly back toward upright balance (-2px), shoulders unwinding",
+                "Right hand lifts silver sword cleanly off the ground to horizontal waist height; left hand releases hilt back to side",
+                "Back boot steps forward smoothly pulling stance back toward shoulder-width",
+                "Scarf & ponytail drifting downward gently from shockwave blast",
+                "DISSIPATION VFX: Ground burst faded — only 4 small warm golden embers & light dust wisp drifting right"),
+            _fb(14, "F14 LINK PAUSE 2->3 — CALM POISE RESET (140ms) [SPLICE #2]",
+                "Completes F13 rise into a composed grounded 34px breathing pause — calm before the ultimate piercing finisher!",
+                "Calm grounded upright 34px martial stance (exact full height!), chin slightly lowered, focused sharp gaze forward",
+                "Right hand holds full clean silver sword calmly angled forward (-30deg); left hand relaxed at hip",
+                "Both brown boots planted solidly shoulder-width on baseline — crisp grounded poise",
+                "Red scarf & orange ponytail calm and neatly draped left"),
+            # --- MOVE 3: Finisher — Coiled Waist-Chamber Piercing Lance (F15..F24 + F25 Ghost) ---
+            _fb(15, "F15 MOVE 3 ENTRY — FENCER STEP & DRAW",
+                "Breaks from F14 calm pause by stepping left foot back into a wide fencer's stance while drawing right elbow back",
+                "Torso twisting sideways into sleek aerodynamic fencer profile, lowering slightly (-3px)",
+                "Right elbow begins retracting silver sword back toward right hip, blade rotating toward flat horizontal; left hand lifting to guide",
+                "Left rear foot sliding cleanly backward on baseline while front right boot plants forward",
+                "Scarf & ponytail trailing slightly forward then catching backward shift"),
+            _fb(16, "F16 MOVE 3 CHAMBER COIL — LEVEL BLADE AT RIBS",
+                "Continues F15 retraction, dropping hips deeper and leveling sword dead-horizontal at waist height",
+                "Deep coiled horizontal fencer crouch (-5px), chest angled forward like an arrow on a bowstring",
+                "Right fist pulled tight against right ribs holding sword dead-horizontal (0deg) pointing straight right; left hand steadying wrist",
+                "Both knees bent deeply in coiled sprinter/fencer stance planted firmly on baseline",
+                "Scarf & ponytail pulled straight back horizontally behind shoulders",
+                "CHAMBER SPARK VFX: Small crisp white-gold energy spark condensing right onto the horizontal silver sword point"),
+            _fb(17, "F17 MOVE 3 CHARGE HOLD — MAX WAIST-CHAMBER LOCK (225ms)",
+                "Locks F16 horizontal chamber at MAXIMUM spring compression and FREEZES for 225ms building crisp piercing force!",
+                "Deepest coiled horizontal crouch (-6px), head tucked low over shoulder, blazing focused eyes locked straight right",
+                "Right fist pinned tightly behind right ribs holding gleaming silver sword DEAD-HORIZONTAL (0deg) pointing dead-right; left palm bracing hip",
+                "Rear boot planted on tiptoe like a compressed spring ready to fire; front knee locked forward bearing tension",
+                "Scarf & ponytail vibrating taut straight behind her",
+                "MAX CHARGE VFX: Blinding condensed white-gold 4-point compression star-flare blazing directly on the horizontal sword tip + tight golden wind ring drawing energy inward!"),
+            _fb(18, "F18 MOVE 3 FAST MOTION — ROCKET LUNGE MID-THRUST (50ms)",
+                "Unleashes F17 coiled lock in an instantaneous 50ms horizontal bullet-lunge punching sword halfway out!",
+                "Body shooting violently forward horizontally, torso pitched low aerodynamic",
+                "Right arm punching full silver sword horizontally straight forward at mid-extension (0deg); left arm snapping straight back for balance",
+                "Rear leg kicking straight off floor driving forward into long explosive lunge",
+                "Scarf & ponytail streaming dead-horizontal backward like racing banners",
+                "MID-THRUST VFX: Razor-sharp blazing white-gold needle streak erupting straight right from the surging blade tip"),
+            _fb(19, "F19 MOVE 3 HITSTOP — FULL-ARENA PIERCING LANCE FINISHER (240ms)",
+                "Hits MAXIMUM full-arm horizontal extension from F18 and FREEZES for 240ms as colossal lance pierces across the entire arena!",
+                "Maximum stretched aerodynamic horizontal fencer's lunge, head low & fierce behind thrusting shoulder",
+                "Right arm 100% locked straight forward driving silver sword dead-horizontal (0deg) to peak forward reach; left arm extended fully behind",
+                "Deepest wide heroic lunge: front right knee bent sharply forward, rear leg stretched completely straight behind on baseline",
+                "Scarf & ponytail blasted violently straight backward by piercing sonic recoil",
+                "HIT#3 FINISHER VFX: GIGANTIC razor-sharp white-hot core & blazing molten-gold piercing lance beam extending across the entire right arena + TWO concentric golden sonic shockwave rings around the shaft + explosive starburst at the far tip!"),
+            _fb(20, "F20 MOVE 3 RECOVERY 1 — LANCE DISSIPATION",
+                "Holds F19 extended lunge briefly as piercing lance breaks into trailing golden wind ribbons",
+                "Torso easing slightly upward out of full forward stretch, relaxing shoulders",
+                "Right arm begins unlocking elbow slightly while keeping sword angled horizontally forward (+4deg)",
+                "Front right boot bracing firmly to halt forward lunge momentum",
+                "Scarf & ponytail billowing down from full horizontal stream",
+                "DISSIPATION VFX: Main lance beam gone — crisp fading thin golden wind-streaks & 5 warm sparks drifting right"),
+            _fb(21, "F21 MOVE 3 RECOVERY 2 — RETRACT & STEP BACK",
+                "Pushes cleanly back upright off F20 front boot while retracting sword elbow back toward torso",
+                "Torso straightening smoothly back to upright neutral height",
+                "Right elbow pulls clean silver sword smoothly back toward chest-side; left hand dropping back to waist",
+                "Front boot steps smoothly back into balanced standing spacing on baseline",
+                "Scarf & ponytail swinging gently left into calm settle"),
+            _fb(22, "F22 MOVE 3 RECOVERY 3 — GUARD RESET",
+                "Rotates wrist cleanly from F21 retraction into exact Cell 1 diagonal ready guard",
+                "Calm upright neutral standing posture matching Cell 1 height",
+                "Right hand raises full gleaming silver sword cleanly to exact 35deg forward-up neutral guard",
+                "Both boots planted cleanly in exact Cell 1 shoulder-width spacing",
+                "Scarf & ponytail settling smoothly left"),
+            _fb(23, "F23 BREATH SETTLE",
+                "Fine natural settle from F22 matching 95% of Master Anchor Cell 1",
+                "Calm neutral ready posture matching Cell 1",
+                "Full gleaming silver sword steady at exact 35deg Cell 1 guard angle",
+                "Both boots planted cleanly in exact Cell 1 neutral stance",
+                "Scarf & ponytail gently calm"),
+            _fb(24, "F24 PRE-LOOP BRIDGE",
+                "98% identical to Cell 1 bridging seamlessly into Ghost F25 (=F1)",
+                "Neutral upright ready posture matching Cell 1",
+                "Full silver sword at exact 35deg Cell 1 guard angle",
+                "Both boots planted cleanly in exact Cell 1 neutral stance",
+                "Scarf & ponytail 98% identical to Cell 1"),
+            _fb(25, "GHOST LOOP = F1",
                 "100% identical to Cell 1 closed-loop anchor",
                 "100% IDENTICAL TO CELL 1 — neutral upright ready stance in left third",
                 "100% IDENTICAL TO CELL 1 — full silver sword at 35deg forward-up",
@@ -876,9 +1164,9 @@ def compile_variable_action_prompt(
                 "UNIFIED STEEL-WIND VFX PALETTE ONLY: pure white hot core -> ice cyan -> electric cyan -> azure -> deep sapphire + crisp white-tan ground dust "
                 "(STRICTLY NO random orange fireballs, NO neon pink/purple disco rainbows!)"
             )
-        elif vfx_hint in ("solar_meteor_ground_slam", "solar_18f_master"):
+        elif vfx_hint in ("solar_meteor_ground_slam", "solar_18f_master", "tri_phase_24f_master"):
             vfx_pal_desc = (
-                "UNIFIED SOLAR-FLAME METEOR VFX PALETTE ONLY: pure white star core -> pale lemon gold -> bright solar gold -> blazing flame orange -> fiery crimson + crisp warm ground shockwave dust "
+                "UNIFIED MOLTEN-GOLD KINETIC STEEL VFX PALETTE ONLY: pure white hot impact core -> pale lemon gold -> bright solar gold -> blazing molten amber -> fiery steel orange + crisp white-tan ground shockwave dust "
                 "(STRICTLY NO random cyan/pink/purple disco rainbows!)"
             )
         else:
@@ -913,17 +1201,28 @@ def compile_variable_action_prompt(
         )
         vfx_boost = "- Keep clean crisp silhouette with full-length gleaming silver sword intact in EVERY SINGLE CELL. ZERO VFX, ZERO shadows."
 
-    if is_part2:
-        loop_rules = [
-            f"- THIS IS PART 2 OF A SEAMLESS CHAINED ANIMATION: Cell 1 MUST 100% MATCH the translucent splice-bridge pose stamped in Cell 1 of Reference Image 2!",
-            f"- Cell {total} (GHOST LOOP ANCHOR) MUST BE 100% IDENTICAL to Reference Image 1 (matching the translucent anchor stamped in Cell {total} of Reference Image 2)!",
-            f"- Cell {total - 1} MUST smoothly bridge into Cell {total} (= F1) for ZERO loop jump!",
-        ]
-    elif part_cfg is not None:
-        loop_rules = [
-            "- THIS IS PART 1 OF A SEAMLESS CHAINED ANIMATION: Cell 1 MUST BE 100% IDENTICAL to Reference Image 1 (matching the translucent anchor stamped in Cell 1 of Reference Image 2)!",
-            f"- Every cell 1 -> {total} MUST maintain smooth bone-to-bone skeletal continuity and exact same 34px character height!",
-        ]
+    if part_cfg is not None:
+        has_splice = bool(part_cfg.get("splice_from_prev_frame"))
+        ends_master = part_cfg.get("end_anchor") == "master"
+        p_label = str(part_cfg.get("name", "PART")).upper()
+        loop_rules = []
+        if has_splice:
+            loop_rules.append(
+                f"- THIS IS {p_label} OF A SEAMLESS MULTI-PART CHAINED ANIMATION: Cell 1 MUST 100% MATCH the translucent splice-bridge pose stamped in Cell 1 of Reference Image 2!"
+            )
+        else:
+            loop_rules.append(
+                f"- THIS IS {p_label} OF A SEAMLESS MULTI-PART CHAINED ANIMATION: Cell 1 MUST BE 100% IDENTICAL to Reference Image 1 (matching the translucent anchor stamped in Cell 1 of Reference Image 2)!"
+            )
+        if ends_master:
+            loop_rules.append(
+                f"- Cell {total} (GHOST LOOP ANCHOR) MUST BE 100% IDENTICAL to Reference Image 1 (matching the translucent anchor stamped in Cell {total} of Reference Image 2)!"
+            )
+            loop_rules.append(f"- Cell {total - 1} MUST smoothly bridge into Cell {total} (= F1) for ZERO loop jump!")
+        else:
+            loop_rules.append(
+                f"- Every cell 1 -> {total} MUST maintain smooth bone-to-bone skeletal continuity and exact same 34px character height!"
+            )
     else:
         loop_rules = [
             f"- Cell 1 (START) and Cell {total} (GHOST LOOP ANCHOR) MUST BE 100% IDENTICAL poses matching Cell 1!",

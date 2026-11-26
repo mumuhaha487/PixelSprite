@@ -74,15 +74,25 @@ def render_variable_timing_showcase_mp4(
         all_audit = active + ([ghost] if ghost is not None else [])
         n_act = len(active)
         cw, ch = active[0].size
-        durations: list[int] = clip["durations_ms"]
+        durations_raw: list[int] = clip["durations_ms"]
+        speed_scale: float = float(clip.get("speed_scale", 1.0))
+        durations: list[int] = [max(25, int(round(d / max(0.2, speed_scale)))) for d in durations_raw]
         hold_tags: dict[int, str] = {int(k): v for k, v in clip.get("hold_tags", {}).items()}
+        rhythm_beats: dict[int, str] = {int(k): str(v) for k, v in clip.get("rhythm_beats", {}).items()}
         timing_mode: str = clip.get("timing_mode", "even")
+        power_feel_fx: bool = bool(clip.get("power_feel_fx", timing_mode == "tri_phase_power"))
         seam: dict = clip.get("seam_metrics", {})
         frame_data: list[dict[str, Any]] = clip.get("frame_data", [])
         combat_sum: dict[str, Any] = clip.get("combat_summary", {})
         pivot: list[int] = clip.get("pivot", [int(cw * 0.3125), int(ch * 0.89)])
         scroll_speed: float = float(clip.get("scroll_speed", 0))
         loops: int = int(clip.get("loops", 3))
+        header_banner: str = str(
+            clip.get(
+                "header_banner",
+                "PixelSprite v2.6 · 三段蓄力停顿 × 命中定帧打击感 × 招间换气 × 6维骨骼衔接",
+            )
+        )
 
         g_cols = int(clip.get("audit_grid_cols", len(all_audit)))
         g_rows = int(clip.get("audit_grid_rows", 1))
@@ -103,11 +113,16 @@ def render_variable_timing_showcase_mp4(
 
         for vf in range(n_vid_frames):
             elapsed_ms = (vf / fps_video) * 1000.0
-            cur_idx, _ = _pick_frame_by_time(durations, elapsed_ms)
+            cur_idx, frame_prog = _pick_frame_by_time(durations, elapsed_ms)
             ground_offset += scroll_speed / fps_video
             cur_fd = frame_data[cur_idx] if cur_idx < len(frame_data) else None
             cur_phase = cur_fd["phase"] if cur_fd else "neutral"
+            cur_beat = rhythm_beats.get(cur_idx + 1) or (cur_fd.get("beat", "") if cur_fd else "")
             is_attack = bool(cur_fd and cur_fd.get("isAttackFrame"))
+            is_charge_hold = cur_beat == "charge_hold" and timing_mode != "even"
+            is_hitstop_beat = is_attack and (cur_beat == "hitstop" or (cur_idx + 1) in hold_tags) and timing_mode != "even"
+            is_link_pause = (cur_phase == "link_pause" or cur_beat == "link_pause") and timing_mode != "even"
+            is_fast_motion = cur_beat == "motion" and timing_mode != "even"
 
             frame = Image.new("RGBA", (W, H), (12, 16, 24, 255))
             draw = ImageDraw.Draw(frame, "RGBA")
@@ -115,12 +130,14 @@ def render_variable_timing_showcase_mp4(
             # Header
             draw.rectangle([0, 0, W, 60], fill=(17, 23, 37, 255))
             draw.line([(0, 60), (W, 60)], fill=(34, 47, 71, 255), width=2)
-            draw.rounded_rectangle([24, 13, 74, 47], radius=8, fill=(239, 68, 68, 255) if is_attack else (56, 189, 248, 255))
-            draw.text((32, 20), "v2.5", fill=(255, 255, 255, 255) if is_attack else (5, 20, 34, 255), font=f_lbl)
-            draw.text((86, 11), "PixelSprite v2.5 · 6维骨骼衔接 × 子招前摇18帧精密连招 × 实时判定框 × N+1闭环", fill=(248, 250, 252, 255), font=f_title)
+            badge_col = (239, 68, 68, 255) if is_attack else ((245, 158, 11, 255) if is_charge_hold else ((168, 85, 247, 255) if is_link_pause else (56, 189, 248, 255)))
+            draw.rounded_rectangle([24, 13, 74, 47], radius=8, fill=badge_col)
+            draw.text((32, 20), "v2.6", fill=(255, 255, 255, 255) if (is_attack or is_link_pause) else (5, 20, 34, 255), font=f_lbl)
+            draw.text((86, 11), header_banner, fill=(248, 250, 252, 255), font=f_title)
+            speed_txt = f" | 播放速度 {speed_scale:.1f}x" if abs(speed_scale - 1.0) > 0.05 else ""
             draw.text(
                 (86, 37),
-                f"{clip['title']} | {cw}x{ch}宽画布(角色恒定34px) | 有效 {n_act} 帧 + 第{n_act+1}帧闭环已剔除 | 绿框=受击框 · 红框=攻击判定框",
+                f"{clip['title']} | {cw}x{ch}宽画布(角色恒定34px) | 有效 {n_act} 帧 + 第{n_act+1}帧闭环已剔除{speed_txt}",
                 fill=(148, 163, 184, 255),
                 font=f_sub,
             )
@@ -196,11 +213,39 @@ def render_variable_timing_showcase_mp4(
 
             # === RIGHT TOP: LARGE 4x NEAREST-NEIGHBOR WIDE COMBAT ARENA + LIVE HITBOX/HURTBOX OVERLAY ===
             rx, ry, rw, rh = 652, 76, 604, 424
-            stage_border = (239, 68, 68, 255) if is_attack else (44, 61, 94, 255)
-            draw.rounded_rectangle([rx, ry, rx + rw, ry + rh], radius=12, fill=(18, 25, 40, 255), outline=stage_border, width=2)
+            # Live Power-Feel Physics Test (ONLY active when power_feel_fx=True & not even control mode!)
+            shake_x, shake_y = 0, 0
+            impact_flash = False
+            if power_feel_fx and timing_mode != "even":
+                if is_hitstop_beat:
+                    # Crisp impact hitstop micro-shake decaying over the first 40% of hitstop freeze!
+                    if frame_prog < 0.14:
+                        impact_flash = True
+                        shake_x = 3 if (vf % 2 == 0) else -3
+                        shake_y = -2 if (vf % 3 == 0) else 2
+                    elif frame_prog < 0.42:
+                        shake_x = 2 if (vf % 2 == 0) else -2
+                        shake_y = 1 if (vf % 2 == 0) else -1
+                elif is_charge_hold:
+                    # Subtle 1px coiled muscle-tension tremor building toward release!
+                    if frame_prog > 0.25:
+                        shake_x = 1 if ((vf // 2) % 2 == 0) else -1
+
+            stage_border = (
+                (253, 224, 71, 255) if impact_flash
+                else ((239, 68, 68, 255) if is_attack
+                else ((245, 158, 11, 255) if is_charge_hold
+                else ((168, 85, 247, 255) if is_link_pause else (44, 61, 94, 255))))
+            )
+            draw.rounded_rectangle([rx, ry, rx + rw, ry + rh], radius=12, fill=(18, 25, 40, 255), outline=stage_border, width=3 if (impact_flash or is_charge_hold) else 2)
             ix, iy, iw, ih = rx + 8, ry + 8, rw - 16, rh - 16
             floor_y = iy + ih - 66
-            sky_col = (34, 24, 52, 255) if (is_attack and cur_idx + 1 in hold_tags) else (22, 34, 58, 255)
+            sky_col = (
+                (52, 30, 56, 255) if impact_flash
+                else ((34, 24, 52, 255) if is_hitstop_beat
+                else ((30, 28, 44, 255) if is_charge_hold
+                else (22, 34, 58, 255)))
+            )
             draw.rectangle([ix, iy, ix + iw, floor_y], fill=sky_col)
             draw.rectangle([ix, floor_y, ix + iw, iy + ih], fill=(30, 50, 48, 255))
 
@@ -214,11 +259,11 @@ def render_variable_timing_showcase_mp4(
                     draw.rectangle([max(ix, tx + 16), floor_y + 12, min(ix + iw, tx + 32), floor_y + 18], fill=(40, 68, 62, 255))
 
             # Unified character pivot X in left-third of stage so HUGE 66px VFX unfolds cleanly right!
-            stage_body_x = rx + int(rw * 0.32)
+            stage_body_x = rx + int(rw * 0.30) + shake_x
             zoom = 4 if cw >= 80 else 5
             draw_w, draw_h = cw * zoom, ch * zoom  # 96*4=384 x 80*4=320 crisp nearest-neighbor!
             sp_x0 = stage_body_x - pivot[0] * zoom
-            sp_y0 = floor_y + 6 - pivot[1] * zoom
+            sp_y0 = floor_y + 6 - pivot[1] * zoom + shake_y
 
             sh_ov = Image.new("RGBA", (W, H), (0, 0, 0, 0))
             ImageDraw.Draw(sh_ov, "RGBA").ellipse([stage_body_x - 48, floor_y - 2, stage_body_x + 48, floor_y + 13], fill=(10, 15, 24, 130))
@@ -263,23 +308,32 @@ def render_variable_timing_showcase_mp4(
             title_y = iy + 20 if title_font == f_h2 else iy + 22
             draw.text((ix + 22, title_y), title_txt, fill=(56, 189, 248, 255), font=title_font)
 
-            cur_ms = durations[cur_idx]
+            cur_ms = durations_raw[cur_idx]
             hold_label = hold_tags.get(cur_idx + 1)
-            if is_attack and hold_label:
+            if timing_mode == "even":
+                pill_fill, pill_out, pill_fg = (14, 42, 34, 255), (74, 222, 128, 255), (134, 239, 172, 255)
+                pill_txt = f"[匀速对照] F{cur_idx + 1}/{n_act} ({cur_ms}ms)"
+            elif is_hitstop_beat:
                 pill_fill, pill_out, pill_fg = (127, 29, 29, 255), (253, 224, 71, 255), (254, 240, 138, 255)
-                pill_txt = f"[判定定帧] HIT#{cur_fd['hitId']} ({cur_ms}ms)"
+                pill_txt = f"[命中定帧] HIT#{cur_fd['hitId']} ({cur_ms}ms)"
             elif is_attack:
                 pill_fill, pill_out, pill_fg = (127, 29, 29, 255), (248, 113, 113, 255), (254, 202, 202, 255)
                 pill_txt = f"[攻击判定] HIT#{cur_fd['hitId']} ({cur_ms}ms)"
+            elif is_charge_hold:
+                pill_fill, pill_out, pill_fg = (92, 52, 8, 255), (253, 224, 71, 255), (254, 240, 138, 255)
+                pill_txt = f"[蓄力停顿] {hold_label or f'F{cur_idx+1}'} ({cur_ms}ms)"
+            elif is_link_pause:
+                pill_fill, pill_out, pill_fg = (58, 22, 92, 255), (192, 132, 252, 255), (233, 213, 255, 255)
+                pill_txt = f"[换气衔接] {hold_label or f'F{cur_idx+1}'} ({cur_ms}ms)"
+            elif is_fast_motion:
+                pill_fill, pill_out, pill_fg = (24, 52, 74, 255), (125, 211, 252, 255), (224, 242, 254, 255)
+                pill_txt = f"[极速挥动] F{cur_idx+1} ({cur_ms}ms)"
             elif cur_phase == "startup":
                 pill_fill, pill_out, pill_fg = (62, 38, 12, 255), (245, 158, 11, 255), (253, 230, 138, 255)
                 pill_txt = f"[前摇] {hold_label or f'F{cur_idx+1}'} ({cur_ms}ms)"
             elif cur_phase == "recovery":
                 pill_fill, pill_out, pill_fg = (14, 34, 58, 255), (56, 189, 248, 255), (186, 230, 253, 255)
-                pill_txt = f"[后摇] {hold_label or f'F{cur_idx+1}'} ({cur_ms}ms)"
-            elif timing_mode == "even":
-                pill_fill, pill_out, pill_fg = (14, 42, 34, 255), (74, 222, 128, 255), (134, 239, 172, 255)
-                pill_txt = f"[匀速] F{cur_idx + 1}/{n_act} ({cur_ms}ms)"
+                pill_txt = f"[正常后摇] {hold_label or f'F{cur_idx+1}'} ({cur_ms}ms)"
             else:
                 pill_fill, pill_out, pill_fg = (32, 38, 54, 255), (148, 163, 184, 255), (226, 232, 240, 255)
                 pill_txt = f"[常态] {hold_label or f'F{cur_idx+1}'} ({cur_ms}ms)"
@@ -308,27 +362,42 @@ def render_variable_timing_showcase_mp4(
             # === RIGHT BOTTOM: PROPORTIONAL COMBAT FRAME-DATA TIMELINE BAR ===
             ty, th = 514, 186
             draw.rounded_rectangle([rx, ty, rx + rw, ty + th], radius=12, fill=(18, 25, 40, 255), outline=(41, 55, 82, 255), width=2)
-            mode_desc = (
-                "匀速节奏（走路/疾跑无停顿）"
-                if timing_mode == "even"
-                else "攻击帧时间轴（橙=前摇 · 红=攻击判定ACTIVE · 蓝=后摇 · 块宽=毫秒时长）"
-            )
+            if timing_mode == "even":
+                mode_desc = "匀速对照模式（全部每帧相同毫秒 · 无蓄力停顿/无打击定帧）"
+            elif timing_mode == "tri_phase_power":
+                mode_desc = "力量节拍轴（金=蓄力停顿 · 白=极速 · 红=命中定帧 · 蓝=后摇 · 紫=换气）"
+            else:
+                mode_desc = "攻击帧时间轴（橙=前摇 · 红=攻击判定ACTIVE · 蓝=后摇 · 块宽=毫秒时长）"
             draw.text((rx + 14, ty + 10), f"3. 帧数据时间轴：{mode_desc}", fill=(226, 232, 240, 255), font=f_lbl)
 
-            bar_x, bar_y, bar_w, bar_h = rx + 14, ty + 38, rw - 28, 56
+            bar_x, bar_y, bar_w, bar_h = rx + 14, ty + 36, rw - 28, 52
             cursor_x = float(bar_x)
             for idx_f, d_ms in enumerate(durations):
+                d_lbl = durations_raw[idx_f]
                 seg_w = (d_ms / max(1, cycle_ms)) * bar_w
                 x0, x1 = int(round(cursor_x)), int(round(cursor_x + seg_w)) - 2
                 cursor_x += seg_w
                 fd_i = frame_data[idx_f] if idx_f < len(frame_data) else None
                 ph = fd_i["phase"] if fd_i else "neutral"
+                bt = rhythm_beats.get(idx_f + 1) or (fd_i.get("beat", "") if fd_i else "")
                 is_hold = (idx_f + 1) in hold_tags
                 is_cur = idx_f == cur_idx
 
-                if ph == "active":
+                if timing_mode == "even":
+                    fc = (22, 88, 70, 255) if is_cur else (16, 28, 38, 255)
+                    oc = (74, 222, 128, 255) if is_cur else (42, 68, 84, 255)
+                elif ph == "active":
                     fc = (185, 28, 28, 255) if is_cur else (92, 20, 26, 255)
                     oc = (253, 224, 71, 255) if (is_cur or is_hold) else (239, 68, 68, 255)
+                elif bt == "charge_hold":
+                    fc = (180, 102, 12, 255) if is_cur else (96, 54, 14, 255)
+                    oc = (253, 224, 71, 255) if is_cur else (245, 158, 11, 255)
+                elif ph == "link_pause" or bt == "link_pause":
+                    fc = (126, 34, 206, 255) if is_cur else (58, 24, 90, 255)
+                    oc = (233, 213, 255, 255) if is_cur else (168, 85, 247, 255)
+                elif bt == "motion":
+                    fc = (46, 112, 156, 255) if is_cur else (32, 54, 76, 255)
+                    oc = (224, 242, 254, 255) if is_cur else (125, 211, 252, 255)
                 elif ph == "startup":
                     fc = (160, 88, 14, 255) if is_cur else (62, 38, 16, 255)
                     oc = (253, 224, 71, 255) if is_cur else (217, 119, 6, 255)
@@ -336,37 +405,66 @@ def render_variable_timing_showcase_mp4(
                     fc = (22, 82, 130, 255) if is_cur else (16, 30, 50, 255)
                     oc = (56, 189, 248, 255) if is_cur else (51, 80, 118, 255)
                 else:
-                    fc = (22, 88, 70, 255) if (is_cur and timing_mode == "even") else ((28, 68, 108, 255) if is_cur else (16, 24, 38, 255))
-                    oc = (74, 222, 128, 255) if (is_cur and timing_mode == "even") else ((56, 189, 248, 255) if is_cur else (42, 56, 84, 255))
+                    fc = (28, 68, 108, 255) if is_cur else (16, 24, 38, 255)
+                    oc = (56, 189, 248, 255) if is_cur else (42, 56, 84, 255)
 
                 draw.rounded_rectangle([x0, bar_y, max(x0 + 4, x1), bar_y + bar_h], radius=5, fill=fc, outline=oc, width=2 if is_cur else 1)
-                if x1 - x0 >= 22:
-                    draw.text((x0 + 4, bar_y + 5), f"F{idx_f + 1}", fill=(248, 250, 252, 255), font=f_sm)
-                if x1 - x0 >= 30:
-                    draw.text((x0 + 4, bar_y + 22), f"{d_ms}", fill=(254, 240, 138, 255) if (ph == "active" or is_hold) else (148, 163, 184, 255), font=f_sm)
-                if (x1 - x0) >= 44:
-                    sub_tag = f"HIT#{fd_i['hitId']}" if (fd_i and fd_i["isAttackFrame"]) else (hold_tags[idx_f + 1][:4] if is_hold else "")
+                if x1 - x0 >= 18:
+                    draw.text((x0 + 3, bar_y + 4), f"F{idx_f + 1}", fill=(248, 250, 252, 255), font=f_sm)
+                if x1 - x0 >= 26:
+                    draw.text((x0 + 3, bar_y + 19), f"{d_lbl}", fill=(254, 240, 138, 255) if (ph == "active" or is_hold) else (148, 163, 184, 255), font=f_sm)
+                if (x1 - x0) >= 38:
+                    sub_tag = (
+                        f"HIT#{fd_i['hitId']}" if (fd_i and fd_i["isAttackFrame"])
+                        else ("蓄力" if bt == "charge_hold" else ("换气" if (ph == "link_pause" or bt == "link_pause") else (hold_tags[idx_f + 1][:3] if is_hold else "")))
+                    )
                     if sub_tag:
-                        draw.text((x0 + 4, bar_y + 38), sub_tag, fill=(254, 240, 138, 255), font=f_sm)
+                        draw.text((x0 + 3, bar_y + 35), sub_tag, fill=(254, 240, 138, 255), font=f_sm)
 
-            strip_y = ty + 106
-            t_slot = bar_w // n_act
-            t_scale = min((t_slot - 4) / cw, 62 / ch)
-            tsw, tsh = max(16, int(cw * t_scale)), max(16, int(ch * t_scale))
+            # Smart 1-row (<=18f) or 2-row (>18f) crisp thumbnail strip so 24 frames stay big and sharp!
+            strip_y = ty + 96
+            n_rows_th = 2 if n_act > 18 else 1
+            per_row = (n_act + n_rows_th - 1) // n_rows_th
+            row_h = 39 if n_rows_th == 2 else 74
+            t_slot = bar_w // per_row
+            t_scale = min((t_slot - 4) / cw, (row_h - 6) / ch)
+            tsw, tsh = max(16, int(cw * t_scale)), max(14, int(ch * t_scale))
             for idx_f in range(n_act):
-                tx0 = bar_x + idx_f * t_slot
+                rr, cc = idx_f // per_row, idx_f % per_row
+                tx0 = bar_x + cc * t_slot
+                ty0 = strip_y + rr * (row_h + 4)
                 is_cur = idx_f == cur_idx
                 fd_i = frame_data[idx_f] if idx_f < len(frame_data) else None
                 is_atk_f = bool(fd_i and fd_i.get("isAttackFrame"))
+                bt_i = rhythm_beats.get(idx_f + 1) or (fd_i.get("beat", "") if fd_i else "")
+                is_chg_f = bt_i == "charge_hold"
+                is_lnk_f = (fd_i and fd_i.get("phase") == "link_pause") or bt_i == "link_pause"
+                fill_t = (
+                    (68, 20, 26, 255) if (is_cur and is_atk_f)
+                    else ((76, 48, 14, 255) if (is_cur and is_chg_f)
+                    else ((58, 24, 90, 255) if (is_cur and is_lnk_f)
+                    else ((24, 46, 72, 255) if is_cur
+                    else ((34, 16, 22, 255) if is_atk_f
+                    else ((38, 26, 12, 255) if is_chg_f
+                    else ((30, 16, 48, 255) if is_lnk_f else (13, 18, 30, 255)))))))
+                )
+                out_t = (
+                    (253, 224, 71, 255) if (is_cur and (is_atk_f or is_chg_f))
+                    else ((233, 213, 255, 255) if (is_cur and is_lnk_f)
+                    else ((56, 189, 248, 255) if is_cur
+                    else ((239, 68, 68, 220) if is_atk_f
+                    else ((245, 158, 11, 200) if is_chg_f
+                    else ((168, 85, 247, 200) if is_lnk_f else (34, 46, 68, 255))))))
+                )
                 draw.rounded_rectangle(
-                    [tx0 + 1, strip_y, tx0 + t_slot - 2, strip_y + 68],
+                    [tx0 + 1, ty0, tx0 + t_slot - 2, ty0 + row_h],
                     radius=5,
-                    fill=(68, 20, 26, 255) if (is_cur and is_atk_f) else ((24, 46, 72, 255) if is_cur else ((34, 16, 22, 255) if is_atk_f else (13, 18, 30, 255))),
-                    outline=(253, 224, 71, 255) if (is_cur and is_atk_f) else ((239, 68, 68, 220) if is_atk_f else ((56, 189, 248, 255) if is_cur else (34, 46, 68, 255))),
-                    width=2 if (is_cur or is_atk_f) else 1,
+                    fill=fill_t,
+                    outline=out_t,
+                    width=2 if (is_cur or is_atk_f or is_chg_f) else 1,
                 )
                 im_t = active[idx_f].resize((tsw, tsh), Image.Resampling.NEAREST)
-                frame.alpha_composite(im_t, (tx0 + (t_slot - tsw) // 2, strip_y + (68 - tsh) // 2))
+                frame.alpha_composite(im_t, (tx0 + (t_slot - tsw) // 2, ty0 + (row_h - tsh) // 2))
 
             buf = io.BytesIO()
             frame.convert("RGB").save(buf, format="JPEG", quality=92)
