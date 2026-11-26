@@ -1,47 +1,38 @@
-# AGENTS.md — PixelSprite v2.1 AI Agent Workflow Playbook
+# AGENTS.md — PixelSprite v2.2 AI Agent Workflow Playbook
 
-This repository is an **AI-native workflow & deterministic CLI pipeline** for generating **16-bit chunky low-resolution pixel-art game animations** with **spacious single-action closed-loop grids (`3×3` / `4×3` / `5×3`)**, **body-isolated zero-teleport quantization (`64×64` canvas, fixed `34px` character height)**, **variable action lengths (`8` / `11` / `14+` frames)**, and **selective per-frame millisecond timing & hitstop (`frameDurationsMs`)** using **GPT Image 2.6** (`gpt-image-2.6-sunburst` / `gpt-image-2.6-flare`).
+This repository is an **AI-native workflow & deterministic CLI pipeline** for generating **16-bit chunky low-resolution pixel-art game animations** with **wide-arena arcade VFX (`96×80` canvas · fixed `34px` chibi height)**, **automatic pixel-fitted Combat Frame Data (Startup / ACTIVE Attack Frames / Recovery, Green Hurtboxes & Red Multi-Hit Hitboxes)**, **spacious single-action closed-loop grids (`3×3` / `4×3` / `5×3`, `N + 1` Ghost Frame)**, and **selective hitstop timing (`frameDurationsMs`)** using **GPT Image 2.6** (`gpt-image-2.6-sunburst` / `gpt-image-2.6-flare`).
 
-When a user drops this repository into your workspace, follow this exact v2.1 playbook.
-
----
-
-## Core Design Principles (v2.1 — Battle-Tested Acceptance Rules)
-
-### 1. Low-Res Chunky Pixel Art (`34px` Tall Char inside `64×64` Canvas) — ZERO Shrinking, ZERO Clipping
-- **Keep the character chunky low-res** (`34px` logical height, 2-head chibi proportion, 14–18 locked flat colors, 1px dark purplish-brown outline `#26192c`, zero anti-aliasing).
-- **NEVER cram a `34px` character + giant skill slashes into a tight `48×48` box** — giant VFX either clip off the right edge or force the quantizer to shrink the character 15–25% on skill frames!
-- Instead, default style `gba_chibi` puts the **exact same `34px` chunky chibi character** inside a generous **`64×64` transparent canvas** (anchored slightly left-of-center at `anchor_x_ratio ≈ 0.38–0.48`, feet at `y = 58`), leaving `34–40px` of open space for giant slashes, flame waves, and airborne starfall bursts with **ZERO body shrinking** and **ZERO clipping**.
-
-### 2. Spacious Single-Action Closed-Loop Grids (`N + 1` Ghost Anchor) — NEVER Cramped `9×4`!
-- **NEVER squeeze 9 narrow columns across one horizontal strip** (`1536px / 9 = 170px` wide causes progressive rightward squish and chops off held swords on frames 4–8!).
-- Give **every action its own spacious grid** (`>= 307px` wide cells!) with **`N + 1` frames** where **Ghost Cell `N + 1` == Cell `1`**:
-  - **Short locomotion / idle / basic attack (`8` active frames)**: **`3×3` grid (`1024×1024` = `341×341` px/cell!)** → Cell `9` is Ghost `= F1` (excluded from final strip!).
-  - **Medium multi-hit flashy skills (`11` active frames)**: **`4×3` grid (`1536×1024` = `384×341` px/cell)** → Cell `12` is Ghost `= F1`.
-  - **Long cinematic ultimates (`14` active frames)**: **`5×3` grid (`1536×1024` = `307×341` px/cell)** → Cell `15` is Ghost `= F1`.
-- The guide renderer (`guide.py`) stamps a translucent Master Anchor (`F1`) in **BOTH Cell `1` AND Ghost Cell `N + 1`** (for standing-start actions), plus a vertical character center lock line and true parabolic airborne lift cues.
-
-### 3. Body-Isolated Pixel Quantization (`quantizer.py`) — ZERO Teleporting, True Jump Arcs, Pure Glowing VFX
-Standard bbox/foot-centroid quantization breaks badly on flashy combat skills. PixelSprite v2.1 isolates `body_mask` (largest connected non-VFX component matching Master Palette) from `vfx_mask` (white/cyan/gold/neon-pink/violet):
-1. **Zero Horizontal Teleporting**: Aligns X strictly from `body_cx` (middle torso+head centroid of `body_mask`, ignoring huge right-hand slashes & left-hand speed lines!).
-   - `idle` / `walk` / `run`: `lock_body_x = True` → **`0.0px` horizontal jitter**.
-   - Combat skills: organic forward lunge clamped smoothly to `[-3, +6]px` relative to `F1`.
-2. **Zero Character Shrinking**: Computes unified `fixed_scale` strictly from standing `body_h` (`char_height_px = 34`), completely immune to tall explosions or ground sparks.
-3. **True Airborne Jump Arcs**: Measures airborne vertical lift strictly from `body_foot_y` (ignoring ground launch sparks & downward star rays that touch the cell bottom!).
-4. **Pure Glowing VFX (Zero Dark Ink Crust)**: Restricts `patch_1px_outline()` strictly to non-VFX `main_body` pixels so bright cyan/gold/pink/crimson slashes stay luminous without ugly black outline blobs.
-
-### 4. Selective Per-Frame Timing & Hitstop (`frameDurationsMs`)
-- **Walk / Run (`timing_mode: "even"`)**: Strictly uniform timing (`[95]*8` / `[75]*8`) — **NEVER** put pauses in locomotion cycles!
-- **Idle (`timing_mode: "breath"`)**: Soft breath holds (`165–170ms`) on F1/F5 peaks, `105–110ms` in between.
-- **Combat & Skills (`timing_mode: "hitstop"`)**:
-  - Anticipation / Charge Hold: `180–195ms`
-  - Fast Dash / Strike Smear: `50–60ms`
-  - Climax Impact HITSTOP (顿帧): `225–265ms`
-  - Stylish Brake / Victory Flourish Hold: `165–215ms`
+When a user drops this repository into your workspace, follow this exact v2.2 playbook.
 
 ---
 
-## Exact CLI Workflow (v2.1)
+## Core Design Principles (v2.2)
+
+### 1. Chunky Low-Res Character (`34px`) Inside Wide Combat Arena (`96×80`, Unified Pivot `[30, 71]`)
+- Keep the character chunky low-res (`34px` logical height, 2-head chibi, 14–18 locked flat colors, 1px dark outline `#261a2b`, zero anti-aliasing).
+- Expand the transparent cell canvas to **`96×80`** with the character anchored in the **left third (`pivot = [30, 71]`)**, opening **`66px` in front of her + `40px` above** for **HUGE, multi-layered arcade pixel VFX** (multi-step cyan/azure/sapphire gale waves, translucent phantom afterimages, blazing solar fire cyclones, ground magic rune circles, dust shockwaves, and full-arena rainbow starfall explosions) — with **ZERO character shrinking** and **ZERO VFX clipping**.
+
+### 2. Automatic Combat Frame Data: Attack Frames (`Startup` / `ACTIVE` / `Recovery`) + Pixel-Fitted Hitboxes & Hurtboxes (`combat.py`)
+Every generated action exports engine-ready combat frame data in `*_meta.json` (`combatSummary` + per-frame `frameData[]`) AND a visual verification grid `*_framedata_audit_3x.png` (while keeping the exported game strip `*_96x80.png` 100% clean with zero burned-in debug boxes!):
+- **Phase State Machine (`phase`)**: `neutral` (locomotion) | `startup` (前摇/蓄力) | `active` (**攻击判定帧**, `isAttackFrame: true`, carrying `hitId`, `damage`, `hitstopMs`, `knockback`) | `recovery` (后摇/收招).
+- **Body Hurtbox (`hurtbox`, Green)**: Automatically computed strictly from non-VFX core body pixels (`body_mask`), trimming floating scarf tips & extended weapons so hits feel fair. Exports both cell `[x, y, w, h]` and pivot-relative `rel: [dx, dy, w, h]` for Unity/Godot/Phaser!
+- **Active Attack Hitbox(es) (`hitboxes`, Red)**: Generated ONLY on `active` attack frames, automatically pixel-fitted directly to the generated sword + glowing VFX pixels (`vfx_mask`)! Ignores behind-back speed lines/afterimages on forward swings (`forward_vfx`) and wraps full explosive bursts on AoE finishers (`aoe_nova`).
+
+### 3. Spacious Closed-Loop `N + 1` Grids + Body-Isolated Zero-Teleport Quantizer (`quantizer.py`)
+- Give EVERY action its own spacious grid with translucent `F1` anchor stamped in **Cell `1`** AND **Ghost Cell `N + 1`** (auto-stripped after RGB continuity audit):
+  - `8` active frames: `3×3` (`1024×1024` for locomotion; `1536×1024` = `512×341`/cell widescreen for `combo1_slash`!).
+  - `11` active frames (`skill_phantom_flurry`): `4×3` (`1536×1024` = `384×341`/cell).
+  - `14` active frames (`ult_starfall_slash`): `5×3` (`1536×1024` = `307×341`/cell).
+- **24-Color Arcade VFX Ramp**: Preserves 4–5 step glowing ramps (White/Cyan/Azure/Sapphire, Starlight/Gold/Flame/Crimson, Pink/Magenta/Violet/Indigo, Warm Dust) while restricting 1px dark outline patching strictly to non-VFX character pixels.
+- **Zero Teleporting & True Jump Arcs**: Aligns `body_cx` & `body_h` strictly from `body_mask` (ignoring slashes, afterimages, and large flame cores while never leaking into small hair highlights); smart grounded-row baseline locks grounded boots to `y=70–71` while preserving smooth airborne parabolas.
+
+### 4. Selective Variable Timing & Hitstop (`frameDurationsMs`)
+- Keep `walk` (`95ms×8`) and `run` (`75ms×8`) **strictly uniform** (no awkward pauses!).
+- Give combat skills clear **anticipation holds** (`180–195ms`), **snappy 50–60ms strike smears**, **heavy climax HITSTOP** (`225–275ms`), and **stylish brake/victory holds** (`165–215ms`).
+
+---
+
+## Exact CLI Workflow (v2.2)
 
 ```bash
 pip install -r requirements.txt
@@ -49,10 +40,10 @@ export PIXELSPRITE_API_URL="https://api.openai.com/v1"
 export PIXELSPRITE_API_KEY="sk-..."
 export PIXELSPRITE_MODEL="gpt-image-2.6-sunburst"
 
-# 1. Inspect built-in styles and spacious closed-loop animations
+# 1. Inspect wide-arena styles, grids & combat attack frames
 python -m pixelsprite list
 
-# 2. One-command full pipeline (Anchor -> 6 spacious closed-loop actions -> 60 FPS showcase MP4)
+# 2. One-command full pipeline (Anchor -> 6 wide-arena actions + Hitboxes/FrameData -> 60 FPS Live HUD MP4)
 python -m pixelsprite all \
   --desc "<character description>" \
   --style gba_chibi \
@@ -61,35 +52,19 @@ python -m pixelsprite all \
   --out output/hero \
   --video output/hero/showcase_v2.mp4
 
-# 3. Re-generate or re-quantize ONLY one specific action if QC catches a flaw
-python -m pixelsprite action \
-  --anchor output/hero/01_anchor_pixel_64px.png \
-  --desc "<character description>" \
-  --anim skill_phantom_flurry \
-  --out output/hero
+# 3. Single-action generate or local re-quantize
+python -m pixelsprite action --anchor output/hero/01_anchor_pixel_64px.png --desc "<character>" --anim skill_phantom_flurry --out output/hero [--requantize-only]
 
-# Re-quantize locally without spending API calls:
-python -m pixelsprite action --anchor ... --desc "..." --anim skill_phantom_flurry --requantize-only --out output/hero
+# 4. Losslessly repack an existing verified strip onto unified 96x80 + compute Frame Data
+python -m pixelsprite repack --anchor <anchor.png> --anim walk --strip <strip.png> --ghost <ghost.png> --out output/hero
 
-# 4. Re-render 60 FPS Variable-Timing + Closed-Loop Seam Audit MP4
-python -m pixelsprite showcase-v2 \
-  --metas output/hero/anim_idle_8f_meta.json \
-          output/hero/anim_walk_8f_meta.json \
-          output/hero/anim_run_8f_meta.json \
-          output/hero/anim_combo1_slash_8f_meta.json \
-          output/hero/anim_skill_phantom_flurry_11f_meta.json \
-          output/hero/anim_ult_starfall_slash_14f_meta.json \
-  --loops 3 \
-  --out output/hero/showcase_v2.mp4
+# 5. Render 60 FPS Live Hitbox/Hurtbox + Variable-Timing + Closed-Loop Seam Audit MP4
+python -m pixelsprite showcase-v2 --metas output/hero/anim_*_meta.json --loops 3 --out output/hero/showcase_v2.mp4
 ```
 
 ---
 
-## Mandatory Forensic & Visual QC Gate (DO NOT SHIP WITHOUT PASSING ALL 5!)
-
-Before delivering any generated sprite set to the user, ALWAYS verify:
-1. **Body X Stability (`maxBodyDX`)**: `<= 1.5px` on `idle`/`walk`/`run`; `<= 6.0px` smooth forward lunge (ZERO sudden backward teleporting!) on combat skills.
-2. **Consistent Body Height (`bodyH`)**: Standing frames stay tightly around `char_height_px` (`~32–36px`) across EVERY animation — zero shrinking on VFX frames!
-3. **Intact Weapon & Anatomy**: Inspect every `*_loop_audit_3x.png` visually — sword/weapon MUST stay intact in every frame (never disappearing mid-cycle and popping back on F1!).
-4. **Closed-Loop Continuity (`F[N] ↔ F[N+1] Ghost` & `F[N] → F1`)**: Verify RGB similarity AND visually compare green `F[N]`, red `Ghost F[N+1]`, and blue `F1`. If ANY single animation fails, re-run `python -m pixelsprite action --anim <id>` for just that action!
-5. **Clean Video & Zero Secret Leaks**: Inspect extracted frames from the rendered 60 FPS MP4 (verify crisp pixel alignment, readable labels with zero `□` missing glyphs, true airborne jump arcs), delete `_raw_cache/`, and verify zero API keys/IPs exist in tracked files.
+## Mandatory Forensic & Visual QC Gate
+1. **6/6 `[AUDIT PASS]`**: Check `maxBodyDX` (`<= 1.5px` locomotion, `<= 3.5px` combat), `bodyH` stability, intact sword on every frame, and `F[N] → F1` RGB continuity.
+2. **Inspect Every `*_framedata_audit_3x.png`**: Verify green Hurtboxes stay strictly on the character body (never ballooning over fire/slashes!) and red Active Hitboxes tightly hug the actual VFX on EVERY designated active attack frame.
+3. **Inspect Extracted 60 FPS MP4 Frames**: Confirm crisp nearest-neighbor rendering, rich multi-layered VFX, readable HUD with zero missing `□` glyphs, delete `_raw_cache/`, and run secret scan before pushing.

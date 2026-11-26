@@ -1,11 +1,17 @@
 {
-  "generator": "PixelSprite 2.1 (Body-Isolated Closed-Loop + Variable-Length + Hitstop)",
+  "generator": "PixelSprite 2.2 (Wide-Arena VFX + Auto Hitbox/Hurtbox Frame Data + N+1 Closed-Loop + Hitstop)",
   "id": "walk",
   "name": "行走 Walk (8帧)",
   "key": "WALK",
-  "cellSize": 64,
+  "cellSize": 96,
+  "cellWidth": 96,
+  "cellHeight": 80,
   "charHeightPx": 34,
-  "anchorXRatio": 0.48,
+  "pivot": [
+    30,
+    71
+  ],
+  "anchorXRatio": 0.3125,
   "frameCount": 8,
   "closedLoop": true,
   "ghostFrameExcluded": true,
@@ -36,13 +42,275 @@
     "fN_vs_f1_iou": 0.887,
     "fN_vs_f1_rgb": 0.802,
     "avg_step_iou": 0.774,
-    "max_body_dx_px": 1.01,
+    "max_body_dx_px": 0.83,
     "body_h_min_max": [
       32,
       35
     ],
     "seam_smooth": true
   },
+  "combatSummary": {
+    "hasAttack": false,
+    "totalFrames": 8,
+    "startupFrames": [],
+    "activeFrames": [],
+    "recoveryFrames": [],
+    "startupMs": 0,
+    "activeMs": 0,
+    "recoveryMs": 0,
+    "totalHitCount": 0,
+    "maxReachPx": 0
+  },
+  "frameData": [
+    {
+      "frame": 1,
+      "durationMs": 95,
+      "phase": "neutral",
+      "isAttackFrame": false,
+      "hitId": null,
+      "damage": 0,
+      "hitstopMs": 0,
+      "knockback": [
+        0.0,
+        0.0
+      ],
+      "label": "常态",
+      "pivot": [
+        30,
+        71
+      ],
+      "hurtbox": {
+        "x": 17,
+        "y": 40,
+        "w": 28,
+        "h": 32,
+        "rel": [
+          -13,
+          -31,
+          28,
+          32
+        ]
+      },
+      "hitboxes": []
+    },
+    {
+      "frame": 2,
+      "durationMs": 95,
+      "phase": "neutral",
+      "isAttackFrame": false,
+      "hitId": null,
+      "damage": 0,
+      "hitstopMs": 0,
+      "knockback": [
+        0.0,
+        0.0
+      ],
+      "label": "常态",
+      "pivot": [
+        30,
+        71
+      ],
+      "hurtbox": {
+        "x": 18,
+        "y": 42,
+        "w": 27,
+        "h": 30,
+        "rel": [
+          -12,
+          -29,
+          27,
+          30
+        ]
+      },
+      "hitboxes": []
+    },
+    {
+      "frame": 3,
+      "durationMs": 95,
+      "phase": "neutral",
+      "isAttackFrame": false,
+      "hitId": null,
+      "damage": 0,
+      "hitstopMs": 0,
+      "knockback": [
+        0.0,
+        0.0
+      ],
+      "label": "常态",
+      "pivot": [
+        30,
+        71
+      ],
+      "hurtbox": {
+        "x": 18,
+        "y": 40,
+        "w": 27,
+        "h": 32,
+        "rel": [
+          -12,
+          -31,
+          27,
+          32
+        ]
+      },
+      "hitboxes": []
+    },
+    {
+      "frame": 4,
+      "durationMs": 95,
+      "phase": "neutral",
+      "isAttackFrame": false,
+      "hitId": null,
+      "damage": 0,
+      "hitstopMs": 0,
+      "knockback": [
+        0.0,
+        0.0
+      ],
+      "label": "常态",
+      "pivot": [
+        30,
+        71
+      ],
+      "hurtbox": {
+        "x": 17,
+        "y": 39,
+        "w": 28,
+        "h": 33,
+        "rel": [
+          -13,
+          -32,
+          28,
+          33
+        ]
+      },
+      "hitboxes": []
+    },
+    {
+      "frame": 5,
+      "durationMs": 95,
+      "phase": "neutral",
+      "isAttackFrame": false,
+      "hitId": null,
+      "damage": 0,
+      "hitstopMs": 0,
+      "knockback": [
+        0.0,
+        0.0
+      ],
+      "label": "常态",
+      "pivot": [
+        30,
+        71
+      ],
+      "hurtbox": {
+        "x": 18,
+        "y": 39,
+        "w": 28,
+        "h": 33,
+        "rel": [
+          -12,
+          -32,
+          28,
+          33
+        ]
+      },
+      "hitboxes": []
+    },
+    {
+      "frame": 6,
+      "durationMs": 95,
+      "phase": "neutral",
+      "isAttackFrame": false,
+      "hitId": null,
+      "damage": 0,
+      "hitstopMs": 0,
+      "knockback": [
+        0.0,
+        0.0
+      ],
+      "label": "常态",
+      "pivot": [
+        30,
+        71
+      ],
+      "hurtbox": {
+        "x": 17,
+        "y": 42,
+        "w": 28,
+        "h": 30,
+        "rel": [
+          -13,
+          -29,
+          28,
+          30
+        ]
+      },
+      "hitboxes": []
+    },
+    {
+      "frame": 7,
+      "durationMs": 95,
+      "phase": "neutral",
+      "isAttackFrame": false,
+      "hitId": null,
+      "damage": 0,
+      "hitstopMs": 0,
+      "knockback": [
+        0.0,
+        0.0
+      ],
+      "label": "常态",
+      "pivot": [
+        30,
+        71
+      ],
+      "hurtbox": {
+        "x": 17,
+        "y": 39,
+        "w": 28,
+        "h": 33,
+        "rel": [
+          -13,
+          -32,
+          28,
+          33
+        ]
+      },
+      "hitboxes": []
+    },
+    {
+      "frame": 8,
+      "durationMs": 95,
+      "phase": "neutral",
+      "isAttackFrame": false,
+      "hitId": null,
+      "damage": 0,
+      "hitstopMs": 0,
+      "knockback": [
+        0.0,
+        0.0
+      ],
+      "label": "常态",
+      "pivot": [
+        30,
+        71
+      ],
+      "hurtbox": {
+        "x": 17,
+        "y": 39,
+        "w": 29,
+        "h": 31,
+        "rel": [
+          -13,
+          -32,
+          29,
+          31
+        ]
+      },
+      "hitboxes": []
+    }
+  ],
   "palette": [
     "#230e24",
     "#fd6922",
@@ -63,6 +331,7 @@
     "#fca989",
     "#fd6659"
   ],
-  "stripFile": "anim_walk_8f_64px.png",
-  "ghostFile": "anim_walk_8f_ghost_frame_64px.png"
+  "stripFile": "anim_walk_8f_96x80.png",
+  "ghostFile": "anim_walk_8f_ghost_frame_96x80.png",
+  "framedataAuditFile": "anim_walk_8f_framedata_audit_3x.png"
 }

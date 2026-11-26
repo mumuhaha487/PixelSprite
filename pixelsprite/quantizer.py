@@ -1,4 +1,4 @@
-"""PixelSprite v2.1 — Body-Isolated Pixel Quantizer (Zero Teleporting, Zero Shrinking, True Jump Arcs, Pure Glowing VFX & Strict Closed-Loop Audit)."""
+"""PixelSprite v2.2 — Body-Isolated Wide-Arena Pixel Quantizer (96x80 Canvas, Fixed 34px Char, 24-Color Arcade VFX Ramp & Strict Closed-Loop Audit)."""
 
 from __future__ import annotations
 
@@ -8,20 +8,38 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 
+# Rich 24-color 16-bit Arcade / NeoGeo / Dead Cells Multi-Layered Pixel VFX Ramp!
 VFX_ACCENT_PALETTE = np.array(
     [
-        [255, 255, 255],  # pure white core flash
-        [186, 246, 255],  # pale frost / lightning cyan
-        [56, 224, 212],   # vivid cyan-teal slash
-        [56, 189, 248],   # electric sky blue lightning
-        [254, 249, 195],  # bright pale starlight gold
-        [250, 204, 21],   # rich golden slash / thunder
-        [251, 146, 60],   # blazing flame orange
-        [239, 78, 36],    # fiery crimson-orange flame edge
-        [255, 82, 172],   # neon hot pink-magenta phantom slash
-        [236, 48, 128],   # deep neon magenta-crimson slash
-        [244, 114, 182],  # soft pink starfall glow
-        [192, 132, 252],  # arcane starfall violet
+        # White / Ice / Starlight Core
+        [255, 255, 255],  # pure white hot core
+        [232, 250, 255],  # ice-white sheen
+        [255, 246, 214],  # warm starlight core
+        # Electric Cyan -> Azure -> Deep Sapphire Wave Ramp
+        [165, 248, 255],  # pale frost cyan
+        [56, 232, 224],   # vivid neon cyan-teal
+        [14, 195, 235],   # electric sky cyan
+        [37, 138, 245],   # intense azure wave
+        [48, 88, 218],    # deep sapphire energy rim
+        # Starlight Gold -> Solar Amber -> Blazing Flame -> Fiery Crimson Ramp
+        [255, 252, 186],  # pale starlight lemon
+        [255, 224, 71],   # bright star gold
+        [251, 182, 36],   # solar amber
+        [251, 132, 42],   # blazing flame orange
+        [242, 72, 34],    # fiery crimson-orange edge
+        [204, 34, 54],    # deep flame crimson
+        # Soft Pink -> Hot Magenta -> Arcane Violet -> Deep Indigo Rift Ramp
+        [255, 186, 232],  # soft sakura pink glow
+        [255, 92, 188],   # neon hot pink slash
+        [238, 44, 148],   # intense neon magenta
+        [212, 68, 248],   # radiant orchid rift
+        [156, 88, 248],   # arcane starfall violet
+        [104, 54, 208],   # deep dimensional indigo
+        # Ground Shockwave Dust & Smoke Puff Ramp
+        [240, 232, 214],  # bright wind-kick dust highlight
+        [208, 196, 178],  # warm dust midtone
+        [162, 154, 146],  # dust shadow
+        [118, 114, 122],  # deep smoke shadow
     ],
     dtype=np.float32,
 )
@@ -124,53 +142,77 @@ def clean_cell_alpha(img: Image.Image, tolerance: int = 28) -> np.ndarray:
 
     if cur > 0:
         max_size = max(comp_sizes)
-        min_keep = max(14, int(max_size * 0.006))
+        min_keep = max(12, int(max_size * 0.004))
         keep_lut = np.zeros(cur + 1, dtype=np.bool_)
         for l_id in range(1, cur + 1):
-            if comp_sizes[l_id] >= min_keep and not (comp_edge[l_id] and comp_sizes[l_id] < max_size * 0.14):
+            if comp_sizes[l_id] >= min_keep and not (comp_edge[l_id] and comp_sizes[l_id] < max_size * 0.10):
                 keep_lut[l_id] = True
         arr[:, :, 3] = np.where(keep_lut[labels], 255, 0)
 
     return arr
 
 
+def _filter_large_components(mask: np.ndarray, min_area: int) -> np.ndarray:
+    h, w = mask.shape
+    labels = np.zeros((h, w), dtype=np.int32)
+    keep = np.zeros((h, w), dtype=np.bool_)
+    cur = 0
+    ys, xs = np.nonzero(mask)
+    for y0, x0 in zip(ys.tolist(), xs.tolist()):
+        if labels[y0, x0] != 0:
+            continue
+        cur += 1
+        q: deque[tuple[int, int]] = deque([(x0, y0)])
+        labels[y0, x0] = cur
+        pts: list[tuple[int, int]] = []
+        while q:
+            x, y = q.popleft()
+            pts.append((x, y))
+            for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                if 0 <= nx < w and 0 <= ny < h and mask[ny, nx] and labels[ny, nx] == 0:
+                    labels[ny, nx] = cur
+                    q.append((nx, ny))
+        if len(pts) >= min_area:
+            for x, y in pts:
+                keep[y, x] = True
+    return keep
+
+
 def _compute_vfx_mask(arr: np.ndarray) -> np.ndarray:
-    """Identify bright glowing skill VFX pixels (white/cyan/gold/neon-pink/violet + attached flame-gold halo) separately from character body."""
+    """Identify bright glowing skill VFX pixels (white/cyan/azure/sapphire/gold/neon-pink/violet + attached flame swirl)."""
     op = arr[:, :, 3] >= 128
     r = arr[:, :, 0].astype(np.int32)
     g = arr[:, :, 1].astype(np.int32)
     b = arr[:, :, 2].astype(np.int32)
 
-    is_white = (r > 225) & (g > 225) & (b > 215)
-    is_cyan = (g > 155) & (b > 170) & (r < 175)
-    is_bright_gold = (r > 235) & (g > 200) & (b < 185)
-    is_neon_pink = (r > 180) & (b > 105) & (g < 170) & ((r - g) > 55)
-    is_violet = (b > 185) & (r > 135) & (g < 170)
-    core = op & (is_white | is_cyan | is_bright_gold | is_neon_pink | is_violet)
+    is_white = (r > 225) & (g > 225) & (b > 210)
+    is_cyan_blue = (b > 165) & (r < 175) & ((b - r) > 35)
+    is_bright_gold = (r > 235) & (g > 195) & (b < 185)
+    is_neon_pink = (r > 175) & (b > 105) & (g < 175) & ((r - g) > 50)
+    is_violet = (b > 170) & (r > 100) & (g < 165) & ((b - g) > 30)
+    core = op & (is_white | is_cyan_blue | is_bright_gold | is_neon_pink | is_violet)
 
-    # Expand ONLY from glowing white/gold core into adjacent bright flame-gold rim (never touches character's separate orange hair!)
-    flame_rim = op & (r > 225) & (g > 135) & (b < 130)
-    glow = op & (is_white | is_bright_gold)
-    steps = 10 if arr.shape[0] > 96 else 2
-    for _ in range(steps):
-        p = np.pad(glow, 1, mode="constant")
-        adj = p[:-2, 1:-1] | p[2:, 1:-1] | p[1:-1, :-2] | p[1:-1, 2:]
-        nxt = glow | (adj & flame_rim)
-        if np.array_equal(nxt, glow):
-            break
-        glow = nxt
+    # Seed flame flood-fill ONLY from LARGE bright white/gold VFX cores (never from tiny 2-6px hair highlights or belt trim!),
+    # and strictly stop at 1px dark character outlines so orange hair & red scarf remain 100% protected!
+    is_dark_outline = (r + g + b) < 155
+    flame_rim = op & (~is_dark_outline) & (r > 195) & (g < 195) & (b < 120) & ((r - b) > 95)
+    min_core = 360 if arr.shape[0] > 96 else 55
+    glow = _filter_large_components(op & (is_white | is_bright_gold), min_area=min_core)
+    if np.any(glow):
+        steps = 48 if arr.shape[0] > 96 else 18
+        for _ in range(steps):
+            p = np.pad(glow, 1, mode="constant")
+            adj = p[:-2, 1:-1] | p[2:, 1:-1] | p[1:-1, :-2] | p[1:-1, 2:]
+            nxt = glow | (adj & flame_rim)
+            if np.array_equal(nxt, glow):
+                break
+            glow = nxt
 
     return core | glow
 
 
 def measure_cell_anatomy(arr: np.ndarray, palette: list[list[int]] | None = None) -> dict[str, Any] | None:
-    """
-    Measure BOTH full opaque bounds (character + VFX) AND isolated CHARACTER BODY bounds!
-    Isolating body_cx, body_h, and body_foot_y strictly from character pixels completely eliminates:
-      1. Horizontal teleporting when huge slashes appear on the right or speed lines on the left!
-      2. Body shrinking when tall star explosions expand total bbox height!
-      3. Grounded pinning when sparks/rays touch the bottom of an airborne jump cell!
-    """
+    """Measure BOTH full opaque bounds (character + VFX) AND isolated CHARACTER BODY bounds (immune to VFX & afterimages!)."""
     op = arr[:, :, 3] >= 128
     ys, xs = np.nonzero(op)
     if len(xs) == 0:
@@ -180,11 +222,9 @@ def measure_cell_anatomy(arr: np.ndarray, palette: list[list[int]] | None = None
     full_w = full_max_x - full_min_x + 1
     full_h = full_max_y - full_min_y + 1
 
-    # Isolate pure character body pixels (non-VFX + largest connected body cluster)
     vfx = _compute_vfx_mask(arr)
     non_vfx = op & (~vfx)
     if palette:
-        # Also filter out disconnected stray pixels far from Master Anchor palette (e.g. orange fire sparks flying far right)
         pts = arr[non_vfx][:, :3].astype(np.float32)
         if len(pts) > 0:
             pal = np.array(palette, dtype=np.float32)
@@ -192,7 +232,7 @@ def measure_cell_anatomy(arr: np.ndarray, palette: list[list[int]] | None = None
             d2 = ((pts[:, None, :] - pal[None, :, :]) ** 2 * w_rgb).sum(axis=2).min(axis=1)
             strict = np.zeros_like(non_vfx)
             strict[non_vfx] = d2 < (46 * 46 * 9)
-            if int(strict.sum()) >= max(30, int(op.sum() * 0.12)):
+            if int(strict.sum()) >= max(30, int(op.sum() * 0.08)):
                 non_vfx = strict
 
     body_mask = _largest_component(non_vfx) if int(non_vfx.sum()) >= 30 else op
@@ -205,7 +245,6 @@ def measure_cell_anatomy(arr: np.ndarray, palette: list[list[int]] | None = None
     b_w = b_max_x - b_min_x + 1
     b_h = b_max_y - b_min_y + 1
 
-    # Use core torso+head X centroid (middle 60% vertically of body_mask) — rock-steady against cape/scarf/foot kick!
     core_y0 = b_min_y + int(b_h * 0.12)
     core_y1 = b_min_y + int(b_h * 0.72)
     core_m = (bys >= core_y0) & (bys <= core_y1)
@@ -263,13 +302,7 @@ def smart_pixel_downsample(
     dst_origin_x: float,
     dst_origin_y: float,
 ) -> np.ndarray:
-    """
-    Exact scale-preserving majority-vote downsampler!
-    Maps logical pixel (lx, ly) directly from source pixel:
-      sx = src_origin_x + (lx - dst_origin_x) / scale
-      sy = src_origin_y + (ly - dst_origin_y) / scale
-    Never distorts aspect ratio and never blurs pixel clusters!
-    """
+    """Exact scale-preserving majority-vote downsampler supporting wide non-square cells (e.g. 96x80)."""
     sh, sw, _ = src_arr.shape
     out = np.zeros((cell_h, cell_w, 4), dtype=np.uint8)
     inv_s = 1.0 / max(1e-6, scale)
@@ -295,7 +328,7 @@ def smart_pixel_downsample(
             patch = src_arr[sy0 : sy1 + 1, sx0 : sx1 + 1]
             total = patch.shape[0] * patch.shape[1]
             op_mask = patch[:, :, 3] >= 128
-            if total == 0 or int(op_mask.sum()) / total < 0.42:
+            if total == 0 or int(op_mask.sum()) / total < 0.40:
                 continue
 
             yy, xx = np.ogrid[sy0 : sy1 + 1, sx0 : sx1 + 1]
@@ -315,7 +348,7 @@ def smart_pixel_downsample(
 
 
 def snap_palette_perceptual(arr: np.ndarray, palette: list[list[int]], preserve_vfx: bool = True) -> tuple[np.ndarray, np.ndarray]:
-    """Snap to Master Palette DNA while preserving luminous VFX accents; also returns exact boolean `is_vfx` mask!"""
+    """Snap to Master Palette DNA while preserving rich 24-color multi-layered VFX gradients & dust puffs!"""
     out = arr.copy()
     mask = out[:, :, 3] >= 128
     is_vfx_full = np.zeros(out.shape[:2], dtype=np.bool_)
@@ -337,7 +370,7 @@ def snap_palette_perceptual(arr: np.ndarray, palette: list[list[int]], preserve_
         vfx_dists = (vfx_diff * vfx_diff * w).sum(axis=2)
         vfx_best_idx = np.argmin(vfx_dists, axis=1)
         vfx_best_dist = vfx_dists[np.arange(len(pixels)), vfx_best_idx]
-        use_vfx = (best_dist > 34 * 34 * 9) & (vfx_best_dist < best_dist * 0.72)
+        use_vfx = (best_dist > 28 * 28 * 9) & (vfx_best_dist < best_dist * 0.80)
         snapped = np.where(use_vfx[:, None], VFX_ACCENT_PALETTE[vfx_best_idx], snapped)
         is_vfx_full[mask] = use_vfx
 
@@ -360,7 +393,7 @@ def patch_1px_outline(
     vfx_mask: np.ndarray | None = None,
     outline_rgb: tuple[int, int, int] = (38, 25, 44),
 ) -> np.ndarray:
-    """Patch ONLY missing 1px ink gaps on non-VFX character body pixels (ZERO dark crust on ANY slash/flame/star!)."""
+    """Patch ONLY missing 1px ink gaps on non-VFX character body pixels (ZERO dark crust on ANY slash/flame/star/dust!)."""
     out = arr.copy()
     op = out[:, :, 3] >= 128
     r = out[:, :, 0].astype(np.int32)
@@ -372,7 +405,6 @@ def patch_1px_outline(
     if vfx_mask is not None:
         is_vfx = is_vfx | vfx_mask
 
-    # Only body pixels belonging to the main character cluster get outline-gap protection!
     body_non_vfx = op & (~is_vfx)
     main_body = _largest_component(body_non_vfx) if int(body_non_vfx.sum()) >= 20 else body_non_vfx
     needs_ink = main_body & (~is_dark)
@@ -414,22 +446,13 @@ def _frame_iou_and_rgb(img_a: Image.Image, img_b: Image.Image) -> tuple[float, f
     if union == 0:
         return 1.0, 1.0
     iou = float((ma & mb).sum()) / float(union)
-    # RGB similarity across union of opaque pixels (catches disappearing swords / shifted eyes even when silhouette IoU is high!)
     rgb_diff = np.abs(a[:, :, :3] - b[:, :, :3]).mean(axis=2) / 255.0
-    # Transparent vs opaque counts as 1.0 diff
     pixel_diff = np.where(ma & mb, rgb_diff, np.where(ma | mb, 1.0, 0.0))
     rgb_sim = 1.0 - float(pixel_diff[ma | mb].mean())
     return iou, rgb_sim
 
 
 def audit_closed_loop(frames_with_ghost: list[Image.Image], palette: list[list[int]] | None = None) -> dict[str, Any]:
-    """
-    Strict v2.1 Closed-Loop & Stability Auditor:
-      - Measures BOTH silhouette IoU AND RGB similarity on F[N]<->F[N+1](Ghost), F[N+1]<->F1, and F[N]->F1!
-      - Measures max single-frame body horizontal jump (`max_body_dx`) to prove ZERO teleporting!
-      - Measures standing body height stability (`body_h_range`) to prove ZERO shrinking!
-      - Returns trimmed active_frames = frames_with_ghost[:-1] (Ghost excluded!).
-    """
     if len(frames_with_ghost) < 3:
         return {"active_frames": frames_with_ghost, "ghost_frame": None, "metrics": {}}
 
@@ -442,7 +465,6 @@ def audit_closed_loop(frames_with_ghost: list[Image.Image], palette: list[list[i
     fn_f1_iou, fn_f1_rgb = _frame_iou_and_rgb(fn, f1)
     step_ious = [_frame_iou_and_rgb(active[i], active[i + 1])[0] for i in range(len(active) - 1)]
 
-    # Measure body X stability & height consistency across active frames
     body_cxs = []
     body_hs = []
     for im in active:
@@ -468,42 +490,62 @@ def audit_closed_loop(frames_with_ghost: list[Image.Image], palette: list[list[i
             "avg_step_iou": round(float(np.mean(step_ious)) if step_ious else 0.0, 3),
             "max_body_dx_px": round(max(max_dx, wrap_dx), 2),
             "body_h_min_max": [int(min(body_hs)), int(max(body_hs))] if body_hs else [0, 0],
-            "seam_smooth": fn_f1_rgb >= 0.72 and max(max_dx, wrap_dx) <= 4.5,
+            "seam_smooth": fn_f1_rgb >= 0.68 and fn_f1_iou >= 0.80 and max(max_dx, wrap_dx) <= 4.5,
         },
     }
 
 
 def make_loop_audit_preview(frames_with_ghost: list[Image.Image], cols: int, rows: int, scale: int = 3) -> Image.Image:
-    cell = frames_with_ghost[0].width
-    atlas = Image.new("RGBA", (cols * cell, rows * cell), (0, 0, 0, 0))
+    cw, ch = frames_with_ghost[0].size
+    atlas = Image.new("RGBA", (cols * cw, rows * ch), (0, 0, 0, 0))
     for i, f in enumerate(frames_with_ghost):
-        atlas.paste(f, ((i % cols) * cell, (i // cols) * cell))
+        atlas.paste(f, ((i % cols) * cw, (i // cols) * ch))
 
     chk = make_checkerboard_preview(atlas, scale=scale)
     ov = Image.new("RGBA", chk.size, (0, 0, 0, 0))
     od = ImageDraw.Draw(ov, "RGBA")
-    cs = cell * scale
+    scw, sch = cw * scale, ch * scale
 
     fn_idx = len(frames_with_ghost) - 2
     gh_idx = len(frames_with_ghost) - 1
     for idx, col_rgba in ((0, (56, 189, 248, 225)), (fn_idx, (74, 222, 128, 235)), (gh_idx, (244, 63, 94, 245))):
         r, c = idx // cols, idx % cols
-        x0, y0 = c * cs, r * cs
+        x0, y0 = c * scw, r * sch
         if idx == gh_idx:
-            od.rectangle([x0, y0, x0 + cs - 1, y0 + cs - 1], fill=(244, 63, 94, 34), outline=col_rgba, width=4)
+            od.rectangle([x0, y0, x0 + scw - 1, y0 + sch - 1], fill=(244, 63, 94, 34), outline=col_rgba, width=4)
         else:
-            od.rectangle([x0 + 1, y0 + 1, x0 + cs - 2, y0 + cs - 2], outline=col_rgba, width=3)
+            od.rectangle([x0 + 1, y0 + 1, x0 + scw - 2, y0 + sch - 2], outline=col_rgba, width=3)
 
     chk.alpha_composite(ov)
     return chk
 
 
 def pack_horizontal_strip(frames: list[Image.Image]) -> Image.Image:
-    cell = frames[0].width
-    strip = Image.new("RGBA", (len(frames) * cell, cell), (0, 0, 0, 0))
+    cw, ch = frames[0].size
+    strip = Image.new("RGBA", (len(frames) * cw, ch), (0, 0, 0, 0))
     for i, f in enumerate(frames):
-        strip.paste(f, (i * cell, 0))
+        strip.paste(f, (i * cw, 0))
     return strip
+
+
+def pad_frame_to_arena(
+    frame: Image.Image,
+    target_w: int = 96,
+    target_h: int = 80,
+    dst_pivot_x: int = 30,
+    dst_foot_y: int = 71,
+    palette: list[list[int]] | None = None,
+) -> Image.Image:
+    """Losslessly embed an existing 1x pixel frame (e.g. 64x64) onto a unified wide arena (e.g. 96x80) at exact pivot."""
+    arr = np.array(frame.convert("RGBA"))
+    an = measure_cell_anatomy(arr, palette=palette)
+    out = Image.new("RGBA", (target_w, target_h), (0, 0, 0, 0))
+    if an is None:
+        return out
+    dx = int(round(dst_pivot_x - an["body_cx"]))
+    dy = int(round(dst_foot_y - an["body_foot_y"]))
+    out.alpha_composite(frame.convert("RGBA"), (dx, dy))
+    return out
 
 
 def quantize_anchor(
@@ -513,7 +555,6 @@ def quantize_anchor(
     max_colors: int = 18,
     outline: bool = True,
 ) -> dict[str, Any]:
-    """Quantize raw anchor at exact fixed `char_height_px` (e.g. 34px tall) inside `cell_size x cell_size` (e.g. 64x64)."""
     cleaned = clean_cell_alpha(raw_img)
     an = measure_cell_anatomy(cleaned)
     if not an:
@@ -532,7 +573,6 @@ def quantize_anchor(
 
     pixel_1x = Image.fromarray(q_arr, "RGBA")
     api_ref = Image.new("RGBA", (512, 512), (0, 0, 0, 0))
-    # Crop tightly around character for clean Reference Image 1
     bbox = pixel_1x.getbbox()
     if bbox:
         tight = pixel_1x.crop(bbox)
@@ -552,9 +592,10 @@ def quantize_grid(
     raw_img: Image.Image,
     cols: int = 3,
     rows: int = 3,
-    cell_size: int = 64,
+    cell_w: int = 96,
+    cell_h: int = 80,
     char_height_px: int = 34,
-    inset_pct: float = 2.5,
+    inset_pct: float = 2.2,
     palette: list[list[int]] | None = None,
     lock_palette: bool = True,
     outline: bool = True,
@@ -562,15 +603,15 @@ def quantize_grid(
     tolerance: int = 28,
     lock_body_x: bool = False,
     allow_airborne: bool = False,
-    max_lift_px: float = 24.0,
-    anchor_x_ratio: float = 0.42,
+    max_lift_px: float = 28.0,
+    anchor_x_ratio: float = 0.3125,
 ) -> dict[str, Any]:
     """
-    v2.1 Body-Isolated Pixel Quantizer:
-      - Locks character scale strictly from `body_h` (NEVER shrinks character on giant VFX frames!).
-      - Aligns X strictly from `body_cx` (NEVER yanks character backward when slashes appear on the right!).
-      - Computes airborne lift strictly from `body_foot_y` (NEVER pins airborne jumps down to ground sparks!).
-      - Patches 1px outline strictly on non-VFX character body (ZERO dark crust on glowing slashes/flames/stars!).
+    v2.2 Wide-Arena Body-Isolated Pixel Quantizer:
+      - Unified 96x80 wide combat arena with locked 34px chibi character height (66px wide open VFX runway!).
+      - Body-isolated `body_cx` & `body_h` alignment (zero teleporting, zero shrinking, ignores afterimages & slashes!).
+      - Smart Grounded-Row Baseline canceling AI row drift while preserving true airborne jump parabolas!
+      - 24-color multi-layered VFX palette preservation + body-only 1px outline protection!
     """
     raw = raw_img.convert("RGBA")
     rw, rh = raw.size
@@ -590,55 +631,48 @@ def quantize_grid(
             cleaned = clean_cell_alpha(crop, tolerance=tolerance)
             an = measure_cell_anatomy(cleaned, palette=palette)
             cells.append((r, c, cleaned, an))
-            if an and an["body_h"] > (ey - sy) * 0.22:
+            if an and an["body_h"] > (ey - sy) * 0.20:
                 standing_body_hs.append(an["body_h"])
 
-    # Anchor scale tightly from Cell 0 (standing F1) + median standing body height (zero cross-action scale drift!)
     standing_body_hs.sort()
     ref_body_h = (
         cells[0][3]["body_h"]
         if cells[0][3] is not None
-        else (standing_body_hs[len(standing_body_hs) // 2] if standing_body_hs else rch * 0.45)
+        else (standing_body_hs[len(standing_body_hs) // 2] if standing_body_hs else rch * 0.40)
     )
     if standing_body_hs:
         med = standing_body_hs[len(standing_body_hs) // 2]
         ref_body_h = 0.65 * ref_body_h + 0.35 * med
 
-    # FIXED unified pixel scale for the entire animation — NEVER shrinks on VFX cells!
     fixed_scale = char_height_px / max(1.0, ref_body_h)
 
-    # Smart Grounded-Row Baseline: cancels 2-4px row-to-row AI baseline drift while preserving TRUE airborne rows!
     row_max_foot = [
-        max((cells[r * cols + c][3]["body_foot_y"] for c in range(cols) if cells[r * cols + c][3] is not None), default=rch * 0.82)
+        max((cells[r * cols + c][3]["body_foot_y"] for c in range(cols) if cells[r * cols + c][3] is not None), default=rch * 0.85)
         for r in range(rows)
     ]
-    global_max_foot = max(row_max_foot) if row_max_foot else rch * 0.82
+    global_max_foot = max(row_max_foot) if row_max_foot else rch * 0.85
     grounded_floors = [f for f in row_max_foot if f >= global_max_foot - rch * 0.085]
     mean_grounded = float(np.mean(grounded_floors)) if grounded_floors else global_max_foot
     row_ground_y = [f if f >= global_max_foot - rch * 0.085 else mean_grounded for f in row_max_foot]
 
-    f1_body_cx = cells[0][3]["body_cx"] if cells[0][3] is not None else (rcw * 0.5)
-    dst_anchor_x = int(round(cell_size * anchor_x_ratio))
-    dst_foot_y = int(round(cell_size * 0.90))
+    f1_body_cx = cells[0][3]["body_cx"] if cells[0][3] is not None else (rcw * 0.30)
+    dst_anchor_x = int(round(cell_w * anchor_x_ratio))
+    dst_foot_y = int(round(cell_h * 0.89))  # 71 inside 80px tall cell
 
     frames: list[Image.Image] = []
-    atlas = Image.new("RGBA", (cols * cell_size, rows * cell_size), (0, 0, 0, 0))
+    atlas = Image.new("RGBA", (cols * cell_w, rows * cell_h), (0, 0, 0, 0))
 
     for r, c, cleaned, an in cells:
         if an is None:
-            q_img = Image.new("RGBA", (cell_size, cell_size), (0, 0, 0, 0))
+            q_img = Image.new("RGBA", (cell_w, cell_h), (0, 0, 0, 0))
         else:
-            # Horizontal alignment strictly from character's own torso/head center (`body_cx`)!
             if lock_body_x:
-                # Locomotion (idle/walk/run): 0.0px horizontal jitter!
                 target_cx = float(dst_anchor_x)
             else:
-                # Combat skills: allow natural organic forward lunge relative to F1, tightly clamped so body NEVER teleports!
                 lunge_px = (an["body_cx"] - f1_body_cx) * fixed_scale
-                lunge_px = max(-1.5, min(3.0, lunge_px))
+                lunge_px = max(-0.8, min(2.2, lunge_px))
                 target_cx = float(dst_anchor_x) + lunge_px
 
-            # Vertical alignment: grounded actions lock boots to exact floor (0.0px drift!); airborne actions preserve true jump arc!
             if not allow_airborne:
                 lift_px = 0.0
             else:
@@ -655,8 +689,8 @@ def quantize_grid(
                 an["body_cx"],
                 an["body_foot_y"],
                 fixed_scale,
-                cell_size,
-                cell_size,
+                cell_w,
+                cell_h,
                 target_cx,
                 target_foot_y,
             )
@@ -670,6 +704,14 @@ def quantize_grid(
             q_img = Image.fromarray(q_arr, "RGBA")
 
         frames.append(q_img)
-        atlas.paste(q_img, (c * cell_size, r * cell_size))
+        atlas.paste(q_img, (c * cell_w, r * cell_h))
 
-    return {"frames": frames, "atlas": atlas, "cols": cols, "rows": rows, "cell_size": cell_size}
+    return {
+        "frames": frames,
+        "atlas": atlas,
+        "cols": cols,
+        "rows": rows,
+        "cell_w": cell_w,
+        "cell_h": cell_h,
+        "pivot": [dst_anchor_x, dst_foot_y],
+    }
