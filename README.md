@@ -1,97 +1,72 @@
-# PixelSprite
+# PixelSprite (v2.0)
 
-> **AI-Native 16-bit Chunky Low-Res `8×8` (64-Frame) Pixel Sprite & Flashy Combat Skill Pipeline for GPT Image 2.6**
+> **AI-Native 16-bit Chunky Low-Res Pixel Sprite Pipeline — Closed-Loop `N+1` Ghost Anchor × Variable Frame Counts (`8 / 11 / 14+` Frames) × Selective Keyframe Hitstop Timing**
 
-把本仓库直接扔给任意 AI 编程助手（Claude Code / Codex / Antigravity / Cursor / Gemini CLI 等），AI 读取根目录的 [`AGENTS.md`](./AGENTS.md)、[`CLAUDE.md`](./CLAUDE.md) 与 [`.agents/skills/pixelsprite/SKILL.md`](./.agents/skills/pixelsprite/SKILL.md) 后，即可直接复现整套 **16-bit 复古低像素 `8×8`（64 帧）角色动作与炫酷技能生成工作流**。
-
----
-
-## 核心思路（为什么这套工作流既灵动又高度一致？）
-
-1. **拒绝僵硬纸片骨骼，拥抱 32px / 48px / 64px 复古低像素大颗粒**
-   - 传统高像素直出图每帧重绘的微弱漂移会被无限放大，而 2D 纸片骨骼又会让动作僵硬、武器像粘在手臂上；
-   - 本工作流采用经典的 **16-bit GBA / SNES 二头身 Q 版低像素规格（角色约 32–36 逻辑像素高、14–20 色锁定色板、1px 复古深色轮廓）**，保留手绘动画的充沛生命力（马尾弹跳、围巾飞扬、360° 空中翻滚、炸裂技能光效），同时通过大像素格子天然收敛细微瑕疵。
-2. **「先量化母图 → 双 8×4 半表锚定 → NumPy 多数决真像素吸附」三段式管线**
-   - **Step 1 · 锚点像素化**：生成或导入角色图后，先立即吸附到 `48×48` 真像素网格并提取 18 色 **Master Palette DNA**，再无损放大作为 Reference Image 1 送入 `/v1/images/edits`，让模型从像素颗粒度到色板 100% 对齐；
-   - **Step 2 · 双 8×4 拼接 8×8（64 帧）**：每个动作完整 8 帧独占一整行（消除换行重复腿部的问题），仅需 **2 次 API 调用**即可产出完整 `8×8`（64 帧）动作模组；
-   - **Step 3 · Aseprite 级确定性后处理**：自动去底去边框噪点 → 多数决无模糊降采样（零 mixels）→ 下肢重心 X 对齐 + 保留真实跳跃腾空高度 → 母图色板锁色（自动放行白/青/金/烈焰/幻影洋红高光技能色）→ 智能 1px 轮廓修补（绝不加粗已有描边、绝不污染发光特效）。
+把本仓库直接扔给任意 AI 编程助手（Claude Code / Codex / Antigravity / Cursor / Gemini CLI 等），AI 读取 [`AGENTS.md`](./AGENTS.md)、[`CLAUDE.md`](./CLAUDE.md) 与 [`.agents/skills/pixelsprite/SKILL.md`](./.agents/skills/pixelsprite/SKILL.md) 后，即可直接复现整套工业级 16-bit 低像素游戏动画工作流。
 
 ---
 
-## 实测成品示例（同角色 128 帧：两张完整 `8×8` 大图！）
+## v2.0 三大核心升级
 
-仓库 [`examples/hero_orange_swordswoman/`](./examples/hero_orange_swordswoman/) 内置了用 `gpt-image-2.6-sunburst` 实测生成的 **128 帧（48×48 真像素）完整角色资产**：
-
-### Sheet 1 · 核心动作与三连剑技 `core_8x8`（64 帧）
-> 行 1-8：待机 Idle · 行走 Walk · 疾跑 Run · 普攻一式横斩 · 普攻二式上挑斩 · 普攻三式 360° 旋风跳劈 · 跳跃冲刺 · 受击倒地转星
-
-![Core 8x8 Sprite Sheet](./examples/hero_orange_swordswoman/sheet_01_core_8x8_checker_4x.png)
-
-### Sheet 2 · 炫酷技能与终极奥义 `skills_8x8`（64 帧）
-> 行 1-8：`Q` 居合瞬闪斩 · `W` 烈焰剑气波 · `E` 冰晶剑雨阵 · `R` 幻影五连乱舞 · `A` 雷霆天降落雷 · `S` 圣盾格挡反击 · `D` 剑意觉醒爆气 · `F` 终极奥义·星陨次元斩
-
-![Skills 8x8 Sprite Sheet](./examples/hero_orange_swordswoman/sheet_02_skills_8x8_checker_4x.png)
+1. **闭环幽灵锚点生成法（`N + 1` 去尾规则）—— 根治首尾跳帧！**
+   - 所有循环动画在生成时都额外多画 **第 `N + 1` 帧（幽灵闭环锚点）**，引导图会在 **第 `1` 格** 和 **第 `N + 1` 格** 同时压印半透明角色锚点，强制 `F[N+1] == F[1]`；
+   - 第 `N` 帧夹在 `F[N-1]` 与 `F[N+1](=F1)` 之间自然过渡；导出前程序自动计算 `F[N] ↔ F[N+1]` 与 `F[N] → F[1]` 贴合度并生成闭环校对图（红框标出 `F[N+1]`），随后**自动剔除第 `N + 1` 帧**，保证游戏内 `F[N] → F[1]` 无缝循环、无重帧卡顿。
+2. **可变动作帧数 —— 按动作复杂度自由规划（不再局限于 8 帧！）**
+   - **基础移动 / 待机 / 轻击**：`8` 有效帧（通过 `9×4` 闭环包生成，每行 `8 + 1` 帧）；
+   - **中长多段连招技能**（如 `R·幻影五连乱舞`）：**`11` 有效帧**（`4×3` = `11 + 1` 闭环生成）；
+   - **超长华丽大招奥义**（如 `F·星陨次元斩`）：**`14` 有效帧**（`5×3` = `14 + 1` 闭环生成），完整铺开蓄力 → 起跳浮空 → 双重十字星斩 → 次元星爆 → 落地收剑定格 → 回正闭环。
+3. **非均匀关键帧时间轴与顿帧（`frameDurationsMs` · 拒绝全动作一刀切！）**
+   - **行走 / 疾跑**：严格保持 **匀速节奏**（`95ms` / `75ms`），绝不乱加停顿；
+   - **待机**：仅在吸气/呼气顶点柔和停留（`155–160ms`）；
+   - **连招与技能大招**：精准赋予 **蓄力停顿（`175–195ms`）→ 高速出招爆发（`50–60ms`）→ 命中定帧 HITSTOP（`220–265ms`）→ 帅气收招定格（`165–215ms`）**，输出标准 Aseprite / 游戏引擎兼容的 `frameDurationsMs` 数组。
 
 ---
 
-## 快速开始（纯 CLI · 零浏览器依赖）
+## v2.0 实测成品（闭环核验图）
 
-### 1. 安装依赖（仅 Pillow + NumPy）
+### 1. 闭环核心动作 `9×4` 核验图（蓝框=`F1` · 绿框=`F8` · 红框=`F9[=F1/导出时剔除]`）
+![Closed-Loop 9x4 Core Audit](./examples/hero_orange_swordswoman/v2_closedloop/core_9x4_closed_9col_audit_4x.png)
+
+### 2. 11 帧中长连招 · `R·幻影五连乱舞`（`4×3` = `11+1` 闭环核验 + 蓄力/五连终结 HITSTOP）
+![11+1f Phantom Flurry Loop Audit](./examples/hero_orange_swordswoman/v2_closedloop/anim_skill_phantom_flurry_11f_loop_audit_4x.png)
+
+### 3. 14 帧超长奥义 · `F·星陨次元斩`（`5×3` = `14+1` 闭环核验 + 浮空滞空/星爆 HITSTOP/收剑定格）
+![14+1f Ultimate Starfall Loop Audit](./examples/hero_orange_swordswoman/v2_closedloop/anim_ult_starfall_slash_14f_loop_audit_4x.png)
+
+---
+
+## 快速开始（纯 Python CLI · 零浏览器依赖）
+
 ```bash
 pip install -r requirements.txt
-```
 
-### 2. 配置 Image 2.6 API（通过环境变量或本地 `.env`，切勿提交密钥）
-```bash
 export PIXELSPRITE_API_URL="https://api.openai.com/v1"
 export PIXELSPRITE_API_KEY="sk-..."
 export PIXELSPRITE_MODEL="gpt-image-2.6-sunburst"
-```
 
-### 3. 一键生成完整 128 帧角色（核心 8×8 + 炫酷技能 8×8 + 技能栏 HUD 演示视频）
-```bash
-python -m pixelsprite all \
-  --desc "元气橘发高马尾少女勇者，红围巾，青绿色镶金短风衣，深棕短靴，手持亮银短剑，二头身Q版" \
-  --style gba_48 \
-  --modules core_8x8,skills_8x8 \
-  --export-rows \
-  --out output/my_hero \
-  --video output/my_hero/showcase.mp4
-```
-
-### 4. 更多常用命令
-```bash
-# 查看内置画风（32/48/64px）与全部 8x8 模组（core_8x8 / skills_8x8 / topdown_8dir_8x8）
+# 1. 查看画风、可变帧数动作与闭环包
 python -m pixelsprite list
 
-# 从已有角色立绘转 48px 低像素锚点母图
-python -m pixelsprite anchor --input-image my_art.png --style gba_48 --out output/hero
+# 2. 生成（或从立绘转）48×48 低像素锚点母图
+python -m pixelsprite anchor --desc "你的角色描述" --style gba_48 --out output/hero
 
-# 单独生成俯视角 8 方向 RPG 奔跑 8×8（64帧）
-python -m pixelsprite generate --anchor output/hero/01_anchor_pixel_48px.png --desc "..." --module topdown_8dir_8x8 --out output/hero
+# 3. 生成闭环 9×4 核心包（自动核验 F8↔F9 并剔除第 9 帧）
+python -m pixelsprite pack9 \
+  --anchor output/hero/01_anchor_pixel_48px.png \
+  --desc "你的角色描述" \
+  --pack core_9x4_closed \
+  --out output/hero/v2
 
-# 使用自定义 JSON 扩展任意 Boss / 法师 / 职业技能表
-python -m pixelsprite generate --anchor output/hero/01_anchor_pixel_48px.png --desc "..." --module custom_skills.json --out output/hero
+# 4. 生成可变长技能（11+1 帧 / 14+1 帧，或传入自定义 JSON）
+python -m pixelsprite action --anchor output/hero/01_anchor_pixel_48px.png --desc "你的角色描述" --anim skill_phantom_flurry --out output/hero/v2
+python -m pixelsprite action --anchor output/hero/01_anchor_pixel_48px.png --desc "你的角色描述" --anim ult_starfall_slash --out output/hero/v2
 
-# 离线调整像素格子或占格比例（0 API 消耗）
-python -m pixelsprite generate --requantize-only --anchor output/hero/01_anchor_pixel_48px.png --desc "..." --module skills_8x8 --cell 64 --fill 0.62 --out output/hero
+# 5. 渲染 60 FPS 非均匀时间轴 + 首尾闭环核验演示视频
+python -m pixelsprite showcase-v2 \
+  --metas output/hero/v2/core_9x4_closed_meta.json \
+          output/hero/v2/anim_skill_phantom_flurry_11f_meta.json \
+          output/hero/v2/anim_ult_starfall_slash_14f_meta.json \
+  --out output/hero/v2/showcase_v2.mp4
 ```
 
----
-
-## 目录结构
-
-```text
-PixelSprite/
-├── AGENTS.md                           # 通用 AI Agent 执行规范（Codex/Antigravity/Cursor 等自动读取）
-├── CLAUDE.md                           # Claude Code 快捷指令
-├── .agents/skills/pixelsprite/SKILL.md # 标准 Agent Skill 定义
-├── pixelsprite/
-│   ├── presets.py                      # 32/48/64px 风格 DNA、core_8x8 / skills_8x8 / topdown_8dir_8x8 与 Prompt 编译器
-│   ├── guide.py                        # 纯 Pillow 8×4 网格、脚底基线与技能光效区域引导图生成器
-│   ├── quantizer.py                    # NumPy 多数决真像素吸附、色板 DNA 锁色、跳跃弧线保留、1px 轮廓修补
-│   ├── api.py                          # 零三方依赖 OpenAI Images 2.6 客户端（自动兼容 Multipart / JSON 网关）
-│   ├── showcase.py                     # 棋盘格 4× 总览图 & 带 ARPG 技能栏 HUD 的演示视频渲染器
-│   └── cli.py                          # 命令行入口（anchor / generate / quantize / showcase / all / list）
-└── examples/hero_orange_swordswoman/   # 实测生成的 128 帧（Core 8×8 + Skills 8×8）完整成品与元数据
-```
+*(仓库同样完整保留 v1 `8×8` 核心 64 帧 + 炫酷技能 64 帧示例于 [`examples/hero_orange_swordswoman/`](./examples/hero_orange_swordswoman/)。)*

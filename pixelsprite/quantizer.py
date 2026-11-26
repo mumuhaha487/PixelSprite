@@ -1,11 +1,11 @@
-"""NumPy + Pillow Aseprite-grade low-res pixel quantizer, palette DNA lock, jump-arc preserver, and 1px outline patcher."""
+"""NumPy + Pillow Aseprite-grade low-res pixel quantizer, palette DNA lock, jump-arc preserver, 1px outline patcher, and Closed-Loop Seam Auditor."""
 
 from __future__ import annotations
 
 from collections import deque
 from typing import Any
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 
 
 VFX_ACCENT_PALETTE = np.array(
@@ -35,11 +35,9 @@ def rgb_to_hex(rgb: tuple[int, int, int] | list[int]) -> str:
 
 
 def clean_cell_alpha(img: Image.Image, tolerance: int = 28) -> np.ndarray:
-    """Return RGBA uint8 array with corner flood-fill bg removal, hard alpha cutoff, and stray border speck removal."""
     arr = np.array(img.convert("RGBA"), dtype=np.uint8)
     h, w, _ = arr.shape
 
-    # 1. Corner flood-fill if image came back with an opaque background
     corners = [(0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)]
     opaque_corners = [(x, y) for x, y in corners if arr[y, x, 3] > 200]
     if len(opaque_corners) >= 2:
@@ -68,11 +66,9 @@ def clean_cell_alpha(img: Image.Image, tolerance: int = 28) -> np.ndarray:
                                 visited[ny, nx] = True
                                 q.append((nx, ny))
 
-    # 2. Hard alpha threshold kills blurry semi-transparent anti-aliased fringe
     mask = arr[:, :, 3] >= 110
     arr[:, :, 3] = np.where(mask, 255, 0)
 
-    # 3. Connected-component filter removes stray grid borders/numbers/tiny dust while keeping sparks & slash VFX
     labels = np.zeros((h, w), dtype=np.int32)
     comp_sizes = [0]
     comp_edge = [False]
@@ -105,8 +101,7 @@ def clean_cell_alpha(img: Image.Image, tolerance: int = 28) -> np.ndarray:
         for l_id in range(1, cur + 1):
             if comp_sizes[l_id] >= min_keep and not (comp_edge[l_id] and comp_sizes[l_id] < max_size * 0.14):
                 keep_lut[l_id] = True
-        keep_mask = keep_lut[labels]
-        arr[:, :, 3] = np.where(keep_mask, 255, 0)
+        arr[:, :, 3] = np.where(keep_lut[labels], 255, 0)
 
     return arr
 
@@ -120,39 +115,23 @@ def measure_opaque_bounds(arr: np.ndarray) -> dict[str, float] | None:
     bw = max_x - min_x + 1
     bh = max_y - min_y + 1
 
-    # Lower 35% foot centroid X (prevents wide right-hand skill beams from yanking character left!)
     foot_start = max_y - int(round(bh * 0.35))
     foot_mask = ys >= foot_start
     foot_cx = float(xs[foot_mask].mean()) if np.any(foot_mask) else (min_x + max_x) * 0.5
-    return {
-        "min_x": min_x,
-        "min_y": min_y,
-        "max_x": max_x,
-        "max_y": max_y,
-        "w": bw,
-        "h": bh,
-        "foot_cx": foot_cx,
-    }
+    return {"min_x": min_x, "min_y": min_y, "max_x": max_x, "max_y": max_y, "w": bw, "h": bh, "foot_cx": foot_cx}
 
 
 def extract_master_palette(img: Image.Image, max_colors: int = 18) -> list[list[int]]:
-    """Extract clean perceptual Master Palette DNA from the quantized anchor sprite."""
     arr = np.array(img.convert("RGBA"), dtype=np.uint8)
     opaque = arr[arr[:, :, 3] >= 200][:, :3]
     if len(opaque) == 0:
         return [[38, 26, 43]]
 
-    # 5-bit color bucketing suppresses rare noise
     keys = ((opaque[:, 0].astype(np.int32) >> 3) << 10) | ((opaque[:, 1].astype(np.int32) >> 3) << 5) | (opaque[:, 2].astype(np.int32) >> 3)
-    uniq, inv, counts = np.unique(keys, return_inverse=True, return_counts=True)
+    _, inv, counts = np.unique(keys, return_inverse=True, return_counts=True)
     order = np.argsort(-counts)
 
-    candidates: list[list[int]] = []
-    for idx in order:
-        pix = opaque[inv == idx]
-        mean_rgb = np.round(pix.mean(axis=0)).astype(int).tolist()
-        candidates.append(mean_rgb)
-
+    candidates = [np.round(opaque[inv == idx].mean(axis=0)).astype(int).tolist() for idx in order]
     chosen: list[list[int]] = []
     min_dist_sq = 28 * 28 * 4
     for r, g, b in candidates:
@@ -175,10 +154,8 @@ def smart_pixel_downsample(
     dst_w: int,
     dst_h: int,
 ) -> np.ndarray:
-    """Majority-vote center-weighted pixel-grid downsampler (zero blur, zero mixels!)."""
     sh, sw, _ = src_arr.shape
     out = np.zeros((cell_size, cell_size, 4), dtype=np.uint8)
-
     scale_x = bounds["w"] / max(1, dst_w)
     scale_y = bounds["h"] / max(1, dst_h)
     min_x, min_y = int(bounds["min_x"]), int(bounds["min_y"])
@@ -198,31 +175,26 @@ def smart_pixel_downsample(
             patch = src_arr[sy0 : sy1 + 1, sx0 : sx1 + 1]
             total = patch.shape[0] * patch.shape[1]
             op_mask = patch[:, :, 3] >= 128
-            op_cnt = int(op_mask.sum())
-            if total == 0 or op_cnt / total < 0.42:
+            if total == 0 or int(op_mask.sum()) / total < 0.42:
                 continue
 
-            # Center-weighted majority color bucket
             yy, xx = np.ogrid[sy0 : sy1 + 1, sx0 : sx1 + 1]
             weights = np.where((np.abs(xx - sx_mid) <= 1) & (np.abs(yy - sy_mid) <= 1), 2, 1)
             rgb = patch[op_mask][:, :3].astype(np.int32)
             w_vals = weights[op_mask]
 
             keys = ((rgb[:, 0] >> 4) << 8) | ((rgb[:, 1] >> 4) << 4) | (rgb[:, 2] >> 4)
-            uniq_k, inv = np.unique(keys, return_inverse=True)
-            bucket_w = np.bincount(inv, weights=w_vals)
-            best_idx = int(np.argmax(bucket_w))
+            _, inv = np.unique(keys, return_inverse=True)
+            best_idx = int(np.argmax(np.bincount(inv, weights=w_vals)))
             sel = inv == best_idx
             sel_w = w_vals[sel][:, None]
-            avg = np.round((rgb[sel] * sel_w).sum(axis=0) / sel_w.sum()).astype(np.uint8)
-            out[ly, lx, :3] = avg
+            out[ly, lx, :3] = np.round((rgb[sel] * sel_w).sum(axis=0) / sel_w.sum()).astype(np.uint8)
             out[ly, lx, 3] = 255
 
     return out
 
 
 def snap_palette_perceptual(arr: np.ndarray, palette: list[list[int]], preserve_vfx: bool = True) -> np.ndarray:
-    """Vectorized human-weighted perceptual palette snap preserving luminous skill VFX accents."""
     if not palette:
         return arr
     out = arr.copy()
@@ -230,13 +202,12 @@ def snap_palette_perceptual(arr: np.ndarray, palette: list[list[int]], preserve_
     if not np.any(mask):
         return out
 
-    pixels = out[mask][:, :3].astype(np.float32)  # (N, 3)
-    pal = np.array(palette, dtype=np.float32)     # (P, 3)
-
-    # Human perceptual RGB weights (2, 4, 3)
+    pixels = out[mask][:, :3].astype(np.float32)
+    pal = np.array(palette, dtype=np.float32)
     w = np.array([2.0, 4.0, 3.0], dtype=np.float32)
+
     diff = pixels[:, None, :] - pal[None, :, :]
-    dists = (diff * diff * w).sum(axis=2)  # (N, P)
+    dists = (diff * diff * w).sum(axis=2)
     best_idx = np.argmin(dists, axis=1)
     best_dist = dists[np.arange(len(pixels)), best_idx]
     snapped = pal[best_idx]
@@ -255,7 +226,6 @@ def snap_palette_perceptual(arr: np.ndarray, palette: list[list[int]], preserve_
 
 
 def despeckle_orphans(arr: np.ndarray) -> np.ndarray:
-    """Remove isolated single-pixel floating dust (0 4-connected opaque neighbors)."""
     out = arr.copy()
     op = (out[:, :, 3] >= 128).astype(np.uint8)
     padded = np.pad(op, 1, mode="constant")
@@ -265,7 +235,6 @@ def despeckle_orphans(arr: np.ndarray) -> np.ndarray:
 
 
 def patch_1px_outline(arr: np.ndarray, outline_rgb: tuple[int, int, int] = (38, 25, 44)) -> np.ndarray:
-    """Patch ONLY missing 1px silhouette outline gaps on body pixels (never doubles 1px ink or muddies glowing VFX!)."""
     out = arr.copy()
     op = out[:, :, 3] >= 128
     r = out[:, :, 0].astype(np.int32)
@@ -307,6 +276,92 @@ def make_checkerboard_preview(atlas_1x: Image.Image, scale: int = 4) -> Image.Im
     return canvas
 
 
+def _frame_iou(img_a: Image.Image, img_b: Image.Image) -> float:
+    a = np.array(img_a.convert("RGBA"))[:, :, 3] >= 128
+    b = np.array(img_b.convert("RGBA"))[:, :, 3] >= 128
+    union = int((a | b).sum())
+    if union == 0:
+        return 1.0
+    return float((a & b).sum()) / float(union)
+
+
+def audit_closed_loop(frames_with_ghost: list[Image.Image]) -> dict[str, Any]:
+    """
+    Quantitatively verify the N+1 Closed-Loop Ghost Frame seam!
+      - frames_with_ghost = [F1, F2, ..., F[N], F[N+1]_ghost]
+      - Checks F[N] vs F[N+1]_ghost, F[N+1]_ghost vs F1, F[N] vs F1, and compares to average consecutive step IoU!
+      - Returns trimmed active_frames = frames_with_ghost[:-1] (Ghost Frame EXCLUDED from final game loop!).
+    """
+    if len(frames_with_ghost) < 3:
+        return {"active_frames": frames_with_ghost, "ghost_frame": None, "metrics": {}}
+
+    active = frames_with_ghost[:-1]
+    ghost = frames_with_ghost[-1]
+    f1 = active[0]
+    fn = active[-1]
+
+    step_ious = [_frame_iou(active[i], active[i + 1]) for i in range(len(active) - 1)]
+    avg_step = float(np.mean(step_ious)) if step_ious else 0.0
+    fn_to_ghost = _frame_iou(fn, ghost)
+    ghost_to_f1 = _frame_iou(ghost, f1)
+    fn_to_f1 = _frame_iou(fn, f1)
+
+    return {
+        "active_frames": active,
+        "ghost_frame": ghost,
+        "metrics": {
+            "activeCount": len(active),
+            "ghostIndex": len(frames_with_ghost),
+            "fN_vs_ghost_iou": round(fn_to_ghost, 3),
+            "ghost_vs_f1_iou": round(ghost_to_f1, 3),
+            "fN_vs_f1_iou": round(fn_to_f1, 3),
+            "avg_step_iou": round(avg_step, 3),
+            "seam_smooth": fn_to_f1 >= max(0.58, avg_step * 0.85),
+        },
+    }
+
+
+def make_loop_audit_preview(
+    frames_with_ghost: list[Image.Image],
+    cols: int,
+    rows: int,
+    scale: int = 4,
+) -> Image.Image:
+    """Build a checkerboard preview highlighting the final Ghost Frame (red dashed border = EXCLUDED) & F[N] (green)!"""
+    cell = frames_with_ghost[0].width
+    atlas = Image.new("RGBA", (cols * cell, rows * cell), (0, 0, 0, 0))
+    for i, f in enumerate(frames_with_ghost):
+        r, c = i // cols, i % cols
+        atlas.paste(f, (c * cell, r * cell))
+
+    chk = make_checkerboard_preview(atlas, scale=scale)
+    ov = Image.new("RGBA", chk.size, (0, 0, 0, 0))
+    od = ImageDraw.Draw(ov, "RGBA")
+    cs = cell * scale
+
+    # Mark Frame N (last active frame) in green and Frame N+1 (Ghost = F1, excluded) in red!
+    fn_idx = len(frames_with_ghost) - 2
+    gh_idx = len(frames_with_ghost) - 1
+    for idx, col_rgba in ((0, (56, 189, 248, 220)), (fn_idx, (74, 222, 128, 235)), (gh_idx, (244, 63, 94, 240))):
+        r, c = idx // cols, idx % cols
+        x0, y0 = c * cs, r * cs
+        if idx == gh_idx:
+            od.rectangle([x0, y0, x0 + cs - 1, y0 + cs - 1], fill=(244, 63, 94, 34), outline=col_rgba, width=4)
+        else:
+            od.rectangle([x0 + 1, y0 + 1, x0 + cs - 2, y0 + cs - 2], outline=col_rgba, width=3)
+
+    chk.alpha_composite(ov)
+    return chk
+
+
+def pack_horizontal_strip(frames: list[Image.Image]) -> Image.Image:
+    cell = frames[0].width
+    strip = Image.new("RGBA", (len(frames) * cell, cell), (0, 0, 0, 0))
+    for i, f in enumerate(frames):
+        strip.paste(f, (i * cell, 0))
+    return strip
+
+
 def quantize_anchor(
     raw_img: Image.Image,
     cell_size: int = 48,
@@ -314,7 +369,6 @@ def quantize_anchor(
     max_colors: int = 18,
     outline: bool = True,
 ) -> dict[str, Any]:
-    """Quantize a raw anchor into 1:1 true-pixel sprite + crisp 512x512 nearest-neighbor API ref + Master Palette DNA."""
     cleaned = clean_cell_alpha(raw_img)
     bounds = measure_opaque_bounds(cleaned)
     if not bounds:
@@ -336,8 +390,6 @@ def quantize_anchor(
         q_arr = patch_1px_outline(q_arr)
 
     pixel_1x = Image.fromarray(q_arr, "RGBA")
-
-    # Crisp nearest-neighbor 512x512 Reference Image 1 for GPT Image 2.6 /v1/images/edits
     api_ref = Image.new("RGBA", (512, 512), (0, 0, 0, 0))
     zoom = max(1, 440 // cell_size)
     draw_sz = cell_size * zoom
@@ -364,8 +416,9 @@ def quantize_grid(
     outline: bool = True,
     preserve_vfx: bool = True,
     tolerance: int = 28,
+    global_ground_reference: bool = False,
 ) -> dict[str, Any]:
-    """Slice & quantize an 8x4 or 8x8 raw sprite sheet with unified chibi scale, jump-arc lift, and palette lock."""
+    """Slice & quantize any (cols x rows) raw grid onto exact logical pixels with unified scale & true jump-arc lift."""
     raw = raw_img.convert("RGBA")
     rw, rh = raw.size
     rcw, rch = rw / cols, rh / rows
@@ -387,13 +440,15 @@ def quantize_grid(
             if bounds and bounds["h"] > (ey - sy) * 0.25:
                 heights.append(bounds["h"])
 
-    # Per-row ground floor Y preserves real airborne leaps/flips while clamping minor <5% standing jitter!
-    row_ground_y = [0.0] * rows
-    for r in range(rows):
-        row_ground_y[r] = max(
-            (cells[r * cols + c][3]["max_y"] for c in range(cols) if cells[r * cols + c][3] is not None),
-            default=0.0,
-        )
+    # Ground baseline: per-row for multi-action sheets, or global max across all cells for a single multi-row skill!
+    if global_ground_reference:
+        g_max = max((b["max_y"] for _, _, _, b in cells if b is not None), default=0.0)
+        row_ground_y = [g_max] * rows
+    else:
+        row_ground_y = [
+            max((cells[r * cols + c][3]["max_y"] for c in range(cols) if cells[r * cols + c][3] is not None), default=0.0)
+            for r in range(rows)
+        ]
 
     heights.sort()
     median_h = heights[len(heights) // 2] if heights else rch * 0.55

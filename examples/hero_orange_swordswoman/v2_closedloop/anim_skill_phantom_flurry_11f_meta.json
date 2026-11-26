@@ -1,0 +1,65 @@
+{
+  "generator": "PixelSprite 2.0 (Variable-Length Closed-Loop + Hitstop)",
+  "id": "skill_phantom_flurry",
+  "name": "R·幻影五连乱舞 (11帧)",
+  "key": "SKILL R",
+  "cellSize": 48,
+  "frameCount": 11,
+  "closedLoop": true,
+  "ghostFrameExcluded": true,
+  "auditGrid": [
+    4,
+    3
+  ],
+  "timingMode": "hitstop",
+  "frameDurationsMs": [
+    95,
+    185,
+    50,
+    55,
+    55,
+    55,
+    60,
+    250,
+    165,
+    85,
+    90
+  ],
+  "holdTags": {
+    "2": "蓄力起势",
+    "8": "五连终结 HITSTOP",
+    "9": "帅气急停"
+  },
+  "scrollSpeed": 0,
+  "loopAudit": {
+    "activeCount": 11,
+    "ghostIndex": 12,
+    "fN_vs_ghost_iou": 0.901,
+    "ghost_vs_f1_iou": 0.963,
+    "fN_vs_f1_iou": 0.907,
+    "avg_step_iou": 0.546,
+    "seam_smooth": true
+  },
+  "palette": [
+    "#230e24",
+    "#fd6922",
+    "#ec263d",
+    "#c33325",
+    "#fdcc43",
+    "#fdd2b2",
+    "#fdfcfd",
+    "#9c1433",
+    "#7d443a",
+    "#297976",
+    "#f8a425",
+    "#244754",
+    "#9994ac",
+    "#581325",
+    "#fcf6d6",
+    "#572d31",
+    "#fca989",
+    "#fd6659"
+  ],
+  "stripFile": "anim_skill_phantom_flurry_11f_48px.png",
+  "ghostFile": "anim_skill_phantom_flurry_11f_ghost_frame_48px.png"
+}

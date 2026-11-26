@@ -1,0 +1,69 @@
+{
+  "generator": "PixelSprite 2.0 (Variable-Length Closed-Loop + Hitstop)",
+  "id": "ult_starfall_slash",
+  "name": "F·星陨次元斩 (14帧奥义)",
+  "key": "ULT F",
+  "cellSize": 48,
+  "frameCount": 14,
+  "closedLoop": true,
+  "ghostFrameExcluded": true,
+  "auditGrid": [
+    5,
+    3
+  ],
+  "timingMode": "hitstop",
+  "frameDurationsMs": [
+    95,
+    85,
+    195,
+    60,
+    140,
+    55,
+    55,
+    265,
+    155,
+    75,
+    85,
+    215,
+    90,
+    90
+  ],
+  "holdTags": {
+    "3": "星辉蓄力停顿",
+    "5": "浮空滞空定格",
+    "8": "次元星爆 HITSTOP",
+    "12": "收剑胜利定格"
+  },
+  "scrollSpeed": 0,
+  "loopAudit": {
+    "activeCount": 14,
+    "ghostIndex": 15,
+    "fN_vs_ghost_iou": 0.836,
+    "ghost_vs_f1_iou": 0.865,
+    "fN_vs_f1_iou": 0.932,
+    "avg_step_iou": 0.512,
+    "seam_smooth": true
+  },
+  "palette": [
+    "#230e24",
+    "#fd6922",
+    "#ec263d",
+    "#c33325",
+    "#fdcc43",
+    "#fdd2b2",
+    "#fdfcfd",
+    "#9c1433",
+    "#7d443a",
+    "#297976",
+    "#f8a425",
+    "#244754",
+    "#9994ac",
+    "#581325",
+    "#fcf6d6",
+    "#572d31",
+    "#fca989",
+    "#fd6659"
+  ],
+  "stripFile": "anim_ult_starfall_slash_14f_48px.png",
+  "ghostFile": "anim_ult_starfall_slash_14f_ghost_frame_48px.png"
+}
