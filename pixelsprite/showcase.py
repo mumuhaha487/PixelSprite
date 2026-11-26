@@ -116,8 +116,8 @@ def render_variable_timing_showcase_mp4(
             draw.rectangle([0, 0, W, 60], fill=(17, 23, 37, 255))
             draw.line([(0, 60), (W, 60)], fill=(34, 47, 71, 255), width=2)
             draw.rounded_rectangle([24, 13, 74, 47], radius=8, fill=(239, 68, 68, 255) if is_attack else (56, 189, 248, 255))
-            draw.text((32, 20), "v2.2", fill=(255, 255, 255, 255) if is_attack else (5, 20, 34, 255), font=f_lbl)
-            draw.text((86, 11), "PixelSprite v2.2 · 宽画布华丽特效 × 攻击判定框/攻击帧数据 × N+1闭环零瞬移", fill=(248, 250, 252, 255), font=f_title)
+            draw.text((32, 20), "v2.5", fill=(255, 255, 255, 255) if is_attack else (5, 20, 34, 255), font=f_lbl)
+            draw.text((86, 11), "PixelSprite v2.5 · 6维骨骼衔接 × 子招前摇18帧精密连招 × 实时判定框 × N+1闭环", fill=(248, 250, 252, 255), font=f_title)
             draw.text(
                 (86, 37),
                 f"{clip['title']} | {cw}x{ch}宽画布(角色恒定34px) | 有效 {n_act} 帧 + 第{n_act+1}帧闭环已剔除 | 绿框=受击框 · 红框=攻击判定框",
@@ -248,9 +248,20 @@ def render_variable_timing_showcase_mp4(
 
                 frame.alpha_composite(box_ov)
 
-            # Stage Title & Live Combat Phase Pill
-            draw.rounded_rectangle([ix + 12, iy + 12, ix + 318, iy + 48], radius=8, fill=(10, 15, 28, 255), outline=(56, 189, 248, 255), width=1)
-            draw.text((ix + 22, iy + 20), f"{clip['title']}", fill=(56, 189, 248, 255), font=f_h2)
+            # Stage Title & Live Combat Phase Pill (auto-fit so long skill titles never overlap the phase pill)
+            title_max_w = (ix + iw - 254) - (ix + 12)
+            title_font = f_h2
+            title_txt = str(clip["title"])
+            tb = draw.textbbox((0, 0), title_txt, font=title_font)
+            title_w = tb[2] - tb[0]
+            if title_w + 20 > title_max_w:
+                title_font = f_lbl
+                tb = draw.textbbox((0, 0), title_txt, font=title_font)
+                title_w = tb[2] - tb[0]
+            title_box_x1 = min(ix + iw - 254, max(ix + 240, ix + 22 + title_w + 14))
+            draw.rounded_rectangle([ix + 12, iy + 12, title_box_x1, iy + 48], radius=8, fill=(10, 15, 28, 255), outline=(56, 189, 248, 255), width=1)
+            title_y = iy + 20 if title_font == f_h2 else iy + 22
+            draw.text((ix + 22, title_y), title_txt, fill=(56, 189, 248, 255), font=title_font)
 
             cur_ms = durations[cur_idx]
             hold_label = hold_tags.get(cur_idx + 1)

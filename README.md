@@ -1,62 +1,52 @@
-# PixelSprite (v2.3)
+# PixelSprite (v2.5)
 
-> **AI-Native 16-bit Chunky Low-Res Pixel Sprite Pipeline — Strict 5-Dimension Per-Frame Choreography (NEVER Outsource Action Design to Image Models!) × Purposeful Physics-Driven Wide-Arena VFX (`96×80` · Fixed `34px` Chibi) × Auto Pixel-Fitted Attack Frames / Hitboxes / Hurtboxes × Dual-Leg Kinematic Gait Guides × Closed-Loop `N+1` & Hitstop**
+> **AI-Native 16-bit Chunky Low-Res Pixel Sprite Pipeline — 6-Dimension Skeletal-Continuity Choreography × Sub-Action Anticipation Law (`子招前摇铁律`) × Multi-Part Chained High-Frame-Count Combos (`18f` / `24f+` Zero Resolution Cramping!) × Unified-Theme Physics-Driven VFX (`96×80` · Fixed `34px` Chibi) × Auto Pixel-Fitted Attack Frames / Hitboxes / Hurtboxes × Dual-Leg Kinematic Gait Guides**
 
 把本仓库直接扔给任意 AI 编程助手（Claude Code / Codex / Antigravity / Cursor / Gemini CLI 等），AI 读取 [`AGENTS.md`](./AGENTS.md)、[`CLAUDE.md`](./CLAUDE.md) 与 [`.agents/skills/pixelsprite/SKILL.md`](./.agents/skills/pixelsprite/SKILL.md) 后，即可直接复现整套纯 Python、零浏览器依赖的 16-bit 低像素游戏战斗动画与帧数据管线。
 
 ---
 
-## v2.3 第 0 条铁律（核心方法论）：绝不让生图模型“自由发挥”动作与特效！
+## v2.5 核心方法论（第 0 条铁律）
 
-> **GPT Image 2.6 只负责像素化渲染，动作编排与特效物理语义必须由 AI 编导逐帧设计清楚！**
+> **GPT Image 2.6 只当像素渲染器，AI 编导必须先逐帧设计好骨骼衔接、子招前摇与物理特效！**
 
-- **严禁笼统提示词**：绝不能只丢一句“画一个 8 帧走路动画”或“画一个酷炫挥剑技能”让生图模型全权生成——生图模型不懂人体步态和战斗逻辑，笼统提示词必然导致**单脚原地踮步**、**武器与手臂僵硬粘连**以及**脱离挥剑轨迹的无意义光污染特效**。
-- **强制 5 维逐帧编排规范（`frame_choreography[]`）**：设计任何新动作前，必须先逐帧写清全部 5 个维度（完整模板见 [`examples/custom_action_template.json`](./examples/custom_action_template.json)，可用 `python -m pixelsprite validate <spec>` 自动校验，生成时支持 `--strict-choreography` 强拦截）：
-  1. **`torso`（躯干与重心）**：身体前倾角、蹲沉/起跳高度、蓄力扭肩与斩击甩肩方向、头部视线；
-  2. **`arms_weapon`（双手与武器轨迹）**：持武器主手与平衡副手的具体位置、挥砍平面（如自左下向右上挑斩）、行进时的异侧手脚反向摆动；
-  3. **`legs_feet`（左右双腿双脚独立轨迹）**：分别写明**近侧前景右腿**与**远侧背景左腿**各自处于着地、承重后滑、垂直中路交叉、蹬地起跳还是前迈位置（配合 `guide.py` 亮黄/亮青双色分腿运动学骨架）；
-  4. **`secondary_motion`（随动部件）**：马尾、围巾、衣摆与身体加速度相反的延迟拖尾与回弹；
-  5. **`vfx_meaning`（有物理来源与战斗意义的特效）**：
-     - 纯移动动作严格为 **`NONE`**（零光效、零杂影）；
-     - 战斗特效必须明确回答 **从哪发出（剑刃/鞋底/躯干）+ 沿什么方向运动（贴合挥砍弧线/反向蹬地烟尘）+ 承担什么战斗语义（前摇预警 / 判定帧可视化 Hitbox / 后摇卸力消散）**，杜绝无意义乱堆发光团块。
-
----
-
-## v2.3 核心工程管线
-
-1. **双色分腿运动学骨架 + 宽裕 `N+1` 闭环网格（`guide.py` / `presets.py`）**
-   - 行走/疾跑自动绘制 **亮黄（近侧右腿）vs 亮青（远侧左腿）** Richard Williams 8 帧运动学骨架，强制严格左右脚交替与 F3/F7 中路垂直交叉；
-   - `8+1f` 用 `3×3`、`11+1f` 用 `4×3`、`14+1f` 用 `5×3`，生成后核验第 `N+1` 幽灵闭环帧并自动剔除。
-2. **游戏引擎级攻击帧与自动像素拟合判定框（`combat.py`）**
-   - 导出 100% 干净透明精灵条（`*_96x80.png`），同步在 `*_meta.json` 输出 `startup`/`active`/`recovery` 阶段、伤害/顿帧/击退、绿框受击框（`hurtbox`）与紧贴实际剑光特效拟合的红框攻击判定框（`hitboxes`），并生成可视化核验图 `*_framedata_audit_3x.png`。
-3. **角色主体隔离量化 + `96×80` 宽画布（`quantizer.py`）**
-   - 角色恒定 `34px` Q 版粗像素质感、统一锚点 `pivot=[30, 71]`、24 色多层次街机光效色板、零横向瞬移、真实空中抛物线与选择性关键帧顿帧（`walk`/`run` 保持严格匀速）。
+1. **强制 6 维逐帧骨骼编排（`frame_choreography[]`）**
+   - 严禁把动作外包给笼统提示词（完整模板见 [`examples/custom_action_template.json`](./examples/custom_action_template.json)，可用 `python -m pixelsprite validate <spec>` 自动强检）：
+     1. **`transition_from_prev`（帧间骨骼衔接链）**：明确写清从上一帧 `F[i-1]` 到本帧 `F[i]` 的关节与武器连续运动路径，杜绝姿态瞬移；
+     2. **`torso`（躯干与重心）**：前倾角、蹲沉/腾空高度、蓄力扭肩与斩击甩肩方向；
+     3. **`arms_weapon`（双手与武器轨迹）**：持武器主手与副手平衡臂的具体角度、挥砍平面、走路时的异侧手脚反向摆动；
+     4. **`legs_feet`（左右双腿独立轨迹）**：分别写明**近侧前景右腿**与**远侧背景左腿**状态（配合 `guide.py` 亮黄/亮青双色分腿运动学骨架）；
+     5. **`secondary_motion`（随动部件）**：马尾、围巾与运动加速度相反的拖尾与缓冲；
+     6. **`vfx_meaning`（统一主题的物理因果特效）**：纯移动严格 `NONE`；战斗动作锁定**单一元素主题**，明确物理来源、挥砍轨迹与战斗语义（前摇预警 / 判定区可视化 / 后摇消散）。
+2. **子招前摇铁律（Sub-Action Anticipation Law）**
+   - **连招中的每一段独立攻击都必须拥有自己的蓄力/收招准备帧（Chamber / Anticipation）**，绝不能“上挑 → 下劈 → 下一帧直接变成突刺已完成”！
+   - `validate_choreography()` 会自动拦截缺失子招前摇的设计，强制先补齐预备过渡帧再生成。
+3. **不限 8 帧 · 无缝多图串联高帧数引擎（`chained_parts`）**
+   - 高难度多段技能不再硬塞进 8～14 帧，也不把 20 格压扁在一张图里：通过 **`Part 1 (4×3)` + `Part 2 (3×3)`** 自动串联（把 Part 1 实测量化末帧 `F11` 半透明压印进 Part 2 第 1 格做衔接锚点、母图 `F1` 压印进末格做闭环锚点，双缝自动核验并去重），以满分辨率自由扩展至 **18 帧 / 24 帧+**！
 
 ---
 
-## v2.4 法医级全 6 组验收指标
+## v2.5 法医级全 6 组验收指标
 
-| 动作 | 帧数 (有效+幽灵) | 5 维编排 & 统一主题 | 前摇 / **攻击判定帧** / 后摇 | 段数 & 射程 | `F[N]↔F[N+1]` RGB | `F[N]→F1` RGB | 最大 X 偏移 |
-|---|---|---|---|---|---:|---:|---:|
-| **待机 `idle`** | `8 + 1` | `5-DIM OK` · 纯净呼吸 | 常态呼吸 | — | **93%** | **86%** | **0.1px** |
-| **行走 `walk`** | `8 + 1` | `5-DIM OK` · 双色分腿交替 | 严格匀速 `95ms` | — | **76%** | **75%** | **0.5px** |
-| **疾跑 `run`** | `8 + 1` | `5-DIM OK` · 双腿交替+腾空 | 严格匀速 `75ms` | — | **72%** | **73%** | **0.6px** |
-| **ATK 1·拔剑横斩** | `8 + 1` | `5-DIM OK` · 统一青白剑风 | 前摇 `1-2` / **判定 `3-4`** / 后摇 `5-8` | **1 段 · 59px** | **85%** | **75%** | **1.8px** |
-| **SKILL R·居合瞬步三连破空斩** | `11 + 1` | `5-DIM OK` · 统一电光青白钢风 | 前摇 `1-3` / **判定 `4-8`** / 后摇 `9-11` | **5 段 · 52px** | **92%** | **77%** | **3.2px** |
-| **ULT F·星炎流星坠地斩** | `14 + 1` | `5-DIM OK` · 统一星金烈焰 | 前摇 `1-5` / **判定 `6-9`** / 后摇 `10-14` | **4 段 · 48px** | **91%** | **82%** | **4.5px** |
+| 动作 | 有效+幽灵帧 | 生成架构 | 6 维编排 & 统一主题 | 前摇/子招蓄力 · **攻击判定帧** · 后摇 | 段数 & 射程 | `F[N]↔F[N+1]` | `F[N]→F1` | 最大 X 偏移 |
+|---|---|---|---|---|---|---:|---:|---:|
+| **待机 `idle`** | `8 + 1` | `[1P] 3×3` | `6-DIM OK` · 纯净呼吸 | 常态呼吸 | — | **93%** | **86%** | **0.1px** |
+| **行走 `walk`** | `8 + 1` | `[1P] 3×3` | `6-DIM OK` · 双色分腿交替 | 严格匀速 `95ms` | — | **76%** | **75%** | **0.5px** |
+| **疾跑 `run`** | `8 + 1` | `[1P] 3×3` | `6-DIM OK` · 双腿交替+腾空 | 严格匀速 `75ms` | — | **72%** | **73%** | **0.6px** |
+| **ATK 1·拔剑横斩** | `8 + 1` | `[1P] 3×3` | `6-DIM OK` · 青白剑风 | 前摇 `1-2` / **判定 `3-4`** / 后摇 `5-8` | **1 段 · 59px** | **85%** | **75%** | **1.8px** |
+| **SKILL R·居合瞬步三连破空斩** | **`18 + 1`** | **`[2P] 4×3+3×3`** | `6-DIM OK` · 电光青白钢风 | 前摇/子招蓄力 `1-4,6,8,11` / **判定 `5,7,9-10,12-13`** / 后摇 `14-18` | **5 段 · 65px** | **92%** | **69%** | **2.4px** |
+| **ULT F·星炎流星坠地斩** | **`18 + 1`** | **`[2P] 4×3+3×3`** | `6-DIM OK` · 星金烈焰 | 前摇/子招蓄力 `1-7,11` / **判定 `8-10,12`** / 后摇 `13-18` | **4 段 · 53px** | **79%** | **71%** | **6.2px** |
 
 ### 1. 行走 & 疾跑双脚运动学交替核验（`walk` / `run` · F1↔F5 左右脚对调 · F3/F7 中路交叉）
 | 行走 `walk`（8+1 帧） | 疾跑 `run`（8+1 帧） |
 |---|---|
 | ![Walk 8+1f](./examples/hero_orange_swordswoman/v2_closedloop/anim_walk_8f_loop_audit_3x.png) | ![Run 8+1f](./examples/hero_orange_swordswoman/v2_closedloop/anim_run_8f_loop_audit_3x.png) |
 
-### 2. 重设计战斗技能：有物理因果与招式连贯性的动作 + 自动像素拟合判定框
-- **ATK 1 · 拔剑横斩（8+1 帧 · 脑后回拉蓄力 → 水平横斩 → 剑风消散）**
-![Combo1 FrameData & Hitbox Audit](./examples/hero_orange_swordswoman/v2_closedloop/anim_combo1_slash_8f_framedata_audit_3x.png)
-- **SKILL R · 居合瞬步三连破空斩（11+1 帧 · 居合低伏 → 瞬步残影 → 上挑/下劈/突刺三斩 → 收刀引爆三道斩痕）**
-![Phantom Flurry FrameData & Hitbox Audit](./examples/hero_orange_swordswoman/v2_closedloop/anim_skill_phantom_flurry_11f_framedata_audit_3x.png)
-- **ULT F · 星炎流星坠地斩（14+1 帧 · 燃剑跃起 → 高空反弓举剑 → 凌空斜斩 → 剑尖贯地星炎爆发 → 拔剑追击）**
-![Ultimate Starfall FrameData & Hitbox Audit](./examples/hero_orange_swordswoman/v2_closedloop/anim_ult_starfall_slash_14f_framedata_audit_3x.png)
+### 2. 18 帧精密串联连招 & 实时判定框核验（每一招均带独立蓄力前摇！）
+- **SKILL R · 居合瞬步三连破空斩（18+1 帧 · 上挑起势 F4 → 上挑 F5 → 脑后回蓄 F6 → 下劈 F7 → **收腰突刺前摇 F8** → 起刺 F9 → 贯通突刺 F10 → 回拉 F11 → 收刀点亮三痕 F12 → 爆裂定帧 F13）**
+![Skill R 18f FrameData & Hitbox Audit](./examples/hero_orange_swordswoman/v2_closedloop/anim_skill_phantom_flurry_18f_framedata_audit_3x.png)
+- **ULT F · 星炎流星坠地斩（18+1 帧 · 燃剑深蹲 F3 → 蹬跃升空 F4-F5 → 高空反弓举剑 F6 → 下劈起势 F7 → 凌空斜斩 F8 → 剑尖贯地 F9 → 星炎爆发 F10 → **拔剑蓄力前摇 F11** → 拔剑烈焰上挑 F12 → 胜利定格 F15）**
+![Ult F 18f FrameData & Hitbox Audit](./examples/hero_orange_swordswoman/v2_closedloop/anim_ult_starfall_slash_18f_framedata_audit_3x.png)
 
 ---
 
@@ -69,21 +59,22 @@ export PIXELSPRITE_API_URL="https://api.openai.com/v1"
 export PIXELSPRITE_API_KEY="sk-..."
 export PIXELSPRITE_MODEL="gpt-image-2.6-sunburst"
 
-# 1. 查看全部内置预设与 5 维编排校验状态
+# 1. 查看预设、串联分片数([1P]/[2P])与 6 维校验状态
 python -m pixelsprite list
 
-# 2. 生成新动作前，先校验自定义 5 维逐帧编排 JSON（拒绝笼统提示词！）
+# 2. 生图前强制校验 6 维骨骼衔接与子招前摇铁律
+python -m pixelsprite validate skill_phantom_flurry
 python -m pixelsprite validate examples/custom_action_template.json
 
-# 3. 严格按 5 维编排生成单个新动作
+# 3. 严格模式生成单图或 18 帧多图串联技能
 python -m pixelsprite action \
   --anchor output/hero/01_anchor_pixel_64px.png \
   --desc "你的角色描述" \
-  --anim examples/custom_action_template.json \
+  --anim skill_phantom_flurry \
   --strict-choreography \
   --out output/hero
 
-# 4. 一键全流程（母图 -> 6套 96x80 闭环精灵 + 攻击判定框帧数据 -> 60 FPS 实时判定框演示视频）
+# 4. 一键全流程 -> 60 FPS 实时判定框演示视频
 python -m pixelsprite all \
   --desc "你的角色描述" \
   --style gba_chibi \

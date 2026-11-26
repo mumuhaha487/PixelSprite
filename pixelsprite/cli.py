@@ -52,24 +52,25 @@ def cmd_list(_args: argparse.Namespace) -> int:
     print("=== Pixel Styles ===")
     for k, v in PIXEL_STYLES.items():
         print(f"  {k:12s} | cell={v['cell_w']}x{v['cell_h']} | charH={v['char_height_px']}px | colors={v['palette_colors']} | {v['label']}")
-    print("\n=== v2.3 Wide-Arena Closed-Loop Variable-Length Animations + 5-Dim Choreography & Combat Hitboxes ===")
+    print("\n=== v2.5 Wide-Arena Closed-Loop Variable-Length Animations + 6-Dim Skeletal Choreography & Sub-Action Anticipation ===")
     for k, a in ANIMATION_SPECS.items():
         g = f"{a['grid'][0]}x{a['grid'][1]} ({a['api_size']})"
         total_ms = sum(a["frame_durations_ms"])
         act_f = sorted(a.get("combat", {}).get("active_frames", {}).keys())
         atk_str = f"ACTIVE={act_f}" if act_f else "LOCOMOTION"
         v = validate_choreography(a)
-        c_tag = "5-DIM OK" if v["ok"] else "WARN"
-        print(f"  {k:22s} | {a['active_frames']:2d}+1f | {g:16s} | {total_ms:4d}ms | {c_tag:8s} | {atk_str}")
+        c_tag = "6-DIM OK" if v["ok"] else "WARN"
+        ch_tag = f"[{len(a['chained_parts'])}P]" if a.get("chained_parts") else "[1P]"
+        print(f"  {k:22s} | {a['active_frames']:2d}+1f {ch_tag} | {g:16s} | {total_ms:4d}ms | {c_tag:8s} | {atk_str}")
     return 0
 
 
 def cmd_validate(args: argparse.Namespace) -> int:
-    """Validate that an animation spec strictly defines 5-dimension per-frame choreography (no vague prompts!)."""
+    """Validate that an animation spec strictly defines 6-dimension per-frame skeletal choreography & Sub-Action Anticipation Law."""
     anim = load_animation_spec(args.anim)
     res = validate_choreography(anim)
     if res["ok"]:
-        print(f"[CHOREOGRAPHY PASS] '{anim['id']}' defines complete 5-dimension choreography for all {res['frameCount']} cells (torso, arms_weapon, legs_feet, secondary_motion, vfx_meaning).")
+        print(f"[CHOREOGRAPHY PASS] '{anim['id']}' defines complete 6-dimension skeletal choreography & sub-action anticipation for all {res['frameCount']} cells.")
         return 0
     print(f"[CHOREOGRAPHY FAIL] '{anim['id']}' has {len(res['issues'])} specification issue(s):")
     for iss in res["issues"]:
@@ -229,6 +230,62 @@ def cmd_action(args: argparse.Namespace) -> int:
 
     anchor_1x, api_ref, palette = _load_anchor_and_palette(args.anchor, cell_w, char_h, colors, not args.no_outline)
     pal_hex = [rgb_to_hex(c) for c in palette]
+    chained = anim.get("chained_parts")
+
+    if chained:
+        # Seamless Multi-Part Chained Sheet Pipeline (e.g. 18+1f via 4x3 Part 1 + 3x3 Part 2!)
+        stitched_frames: list[Image.Image] = []
+        pivot_out = [int(round(cell_w * float(anim.get("anchor_x_ratio", 0.3125)))), int(round(cell_h * 0.89))]
+        for p_idx, part in enumerate(chained):
+            p_name = part["name"]
+            p_cols, p_rows = part["grid"]
+            p_api_size = part.get("api_size", "1536x1024")
+            raw_path = raw_dir / f"{prefix}_{p_name}_raw_{p_cols}x{p_rows}.png"
+            splice_fnum = part.get("splice_from_prev_frame")
+            splice_img = stitched_frames[splice_fnum - 1] if (splice_fnum and len(stitched_frames) >= splice_fnum) else None
+
+            if args.requantize_only and raw_path.is_file():
+                print(f"[ACTION {p_name}] Reusing cached raw {p_cols}x{p_rows}: {raw_path}")
+                raw_img = Image.open(raw_path).convert("RGBA")
+            else:
+                cfg = resolve_api_config(args.api_url, args.api_key, args.model)
+                guide_img = render_variable_action_guide(
+                    anim, anchor_img=anchor_1x, part_cfg=part,
+                    splice_img=splice_img, splice_pivot=(pivot_out[0], pivot_out[1]), char_h_logical=char_h,
+                )
+                guide_img.save(raw_dir / f"{prefix}_{p_name}_guide_{p_cols}x{p_rows}.png")
+                prompt = compile_variable_action_prompt(args.desc, args.style, anim, palette_hex=pal_hex, part_cfg=part)
+                print(f"[ACTION {p_name}] Calling {cfg['model']} for {anim['id']} {p_name} ({len(part['frame_indices'])} cells on {p_cols}x{p_rows} @ {p_api_size})...")
+                raw_img = edit_images(prompt, [api_ref, guide_img], cfg, size=p_api_size)
+                raw_img.save(raw_path)
+
+            # Anchor Part 2 scale & X strictly on Ghost Cell -1 (= standing F1) so Part 1 & Part 2 share 100% identical scale!
+            anchor_idx = -1 if part.get("end_anchor") == "master" else 0
+            q = quantize_grid(
+                raw_img,
+                cols=p_cols, rows=p_rows, cell_w=cell_w, cell_h=cell_h, char_height_px=char_h,
+                inset_pct=args.inset, palette=palette, lock_palette=not args.no_palette_lock,
+                outline=not args.no_outline, preserve_vfx=bool(anim.get("combat", {}).get("active_frames")),
+                lock_body_x=bool(anim.get("lock_body_x", False)),
+                allow_airborne=bool(anim.get("allow_airborne", False)),
+                max_lift_px=float(anim.get("max_lift_px", 28.0)),
+                anchor_x_ratio=float(anim.get("anchor_x_ratio", 0.3125)),
+                scale_anchor_cell_idx=anchor_idx,
+            )
+            pivot_out = q["pivot"]
+            p_frames = q["frames"][: len(part["frame_indices"])]
+            if splice_fnum and splice_img is not None:
+                from .quantizer import _frame_iou_and_rgb
+                s_iou, s_rgb = _frame_iou_and_rgb(splice_img, p_frames[0])
+                print(f"[SPLICE AUDIT] {anim['id']} F{splice_fnum} Part1<->Part2_Cell1: iou={s_iou:.2f}, rgb={s_rgb:.2f} (dropping duplicate bridge Cell 1)")
+                stitched_frames.extend(p_frames[1:])
+            else:
+                keep_n = int(part.get("keep_count", len(p_frames)))
+                stitched_frames.extend(p_frames[:keep_n])
+
+        _export_action_outputs(anim, stitched_frames[:n_total], pivot_out, palette, out_dir, prefix, cell_w, cell_h, char_h)
+        return 0
+
     raw_path = raw_dir / f"{prefix}_raw_{cols}x{rows}.png"
 
     if args.requantize_only and raw_path.is_file():
@@ -378,11 +435,11 @@ def cmd_all(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="pixelsprite", description="PixelSprite v2.2 — Wide-Arena VFX, Auto Combat Hitboxes/Attack Frames & Closed-Loop Pipeline")
+    p = argparse.ArgumentParser(prog="pixelsprite", description="PixelSprite v2.5 — 6-Dim Skeletal Continuity, Sub-Action Anticipation, Chained 18+ Frame Combos & Auto Combat Hitboxes")
     sub = p.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("list", help="List styles, wide-arena specs, 5-dim choreography status & attack frames").set_defaults(func=cmd_list)
+    sub.add_parser("list", help="List styles, wide-arena specs, 6-dim choreography & sub-action anticipation status").set_defaults(func=cmd_list)
 
-    sp_val = sub.add_parser("validate", help="Validate that an action JSON defines complete 5-dim per-frame choreography")
+    sp_val = sub.add_parser("validate", help="Validate that an action JSON defines complete 6-dim skeletal continuity & sub-action anticipation")
     sp_val.add_argument("anim", help="Built-in animation id or path to custom animation JSON")
     sp_val.set_defaults(func=cmd_validate)
 
@@ -416,7 +473,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp_act.add_argument("--inset", type=float, default=2.2)
     sp_act.add_argument("--no-palette-lock", action="store_true")
     sp_act.add_argument("--requantize-only", action="store_true")
-    sp_act.add_argument("--strict-choreography", action="store_true", help="Abort if spec lacks 5-dimension per-frame choreography")
+    sp_act.add_argument("--strict-choreography", action="store_true", help="Abort if spec lacks 6-dimension skeletal choreography or sub-action anticipation")
     add_quant(sp_act); add_api(sp_act)
     sp_act.set_defaults(func=cmd_action)
 

@@ -195,8 +195,8 @@ def _compute_vfx_mask(arr: np.ndarray) -> np.ndarray:
     # Seed flame flood-fill ONLY from LARGE bright white/gold VFX cores (never from tiny 2-6px hair highlights or belt trim!),
     # and strictly stop at 1px dark character outlines so orange hair & red scarf remain 100% protected!
     is_dark_outline = (r + g + b) < 155
-    flame_rim = op & (~is_dark_outline) & (r > 195) & (g < 195) & (b < 120) & ((r - b) > 95)
-    min_core = 360 if arr.shape[0] > 96 else 55
+    flame_rim = op & (~is_dark_outline) & (r > 180) & (g < 215) & (b < 150) & ((r - b) > 55)
+    min_core = 320 if arr.shape[0] > 96 else 34
     glow = _filter_large_components(op & (is_white | is_bright_gold), min_area=min_core)
     if np.any(glow):
         steps = 48 if arr.shape[0] > 96 else 18
@@ -605,6 +605,7 @@ def quantize_grid(
     allow_airborne: bool = False,
     max_lift_px: float = 28.0,
     anchor_x_ratio: float = 0.3125,
+    scale_anchor_cell_idx: int = 0,
 ) -> dict[str, Any]:
     """
     v2.2 Wide-Arena Body-Isolated Pixel Quantizer:
@@ -635,9 +636,10 @@ def quantize_grid(
                 standing_body_hs.append(an["body_h"])
 
     standing_body_hs.sort()
+    ref_cell = cells[scale_anchor_cell_idx] if (-len(cells) <= scale_anchor_cell_idx < len(cells)) else cells[0]
     ref_body_h = (
-        cells[0][3]["body_h"]
-        if cells[0][3] is not None
+        ref_cell[3]["body_h"]
+        if ref_cell[3] is not None
         else (standing_body_hs[len(standing_body_hs) // 2] if standing_body_hs else rch * 0.40)
     )
     if standing_body_hs:
@@ -655,7 +657,6 @@ def quantize_grid(
         for r in range(rows)
     ]
     global_max_foot = max(row_max_foot) if row_max_foot else rch * 0.85
-    # A row is grounded if its lowest boot is within 12% of global floor OR all cells in the row share a flat standing floor (<5% variance)!
     is_grounded_row = [
         (row_max_foot[r] >= global_max_foot - rch * 0.12) or ((row_max_foot[r] - row_min_foot[r]) < rch * 0.05)
         for r in range(rows)
@@ -664,7 +665,7 @@ def quantize_grid(
     mean_grounded = float(np.mean(grounded_floors)) if grounded_floors else global_max_foot
     row_ground_y = [row_max_foot[r] if is_grounded_row[r] else mean_grounded for r in range(rows)]
 
-    f1_body_cx = cells[0][3]["body_cx"] if cells[0][3] is not None else (rcw * 0.30)
+    f1_body_cx = ref_cell[3]["body_cx"] if ref_cell[3] is not None else (rcw * 0.30)
     dst_anchor_x = int(round(cell_w * anchor_x_ratio))
     dst_foot_y = int(round(cell_h * 0.89))  # 71 inside 80px tall cell
 

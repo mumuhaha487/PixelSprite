@@ -130,19 +130,19 @@ def compute_active_hitboxes(
 
     xx = np.broadcast_to(np.arange(w)[None, :], (h, w))
     yy = np.broadcast_to(np.arange(h)[:, None], (h, w))
-    # Exclude white eye/face specular pixels strictly inside the character's upper head box so face pixels never spawn a bogus hitbox!
-    head_box = (
-        (xx >= hurtbox["x"]) & (xx <= hurtbox["x"] + hurtbox["w"] - 2)
-        & (yy >= hurtbox["y"]) & (yy <= hurtbox["y"] + int(hurtbox["h"] * 0.62))
+    # Exclude eye whites & gold belt trim strictly inside character torso so inner body highlights never spawn tiny bogus sub-hitboxes!
+    body_inner = (
+        (xx >= hurtbox["x"]) & (xx <= hurtbox["x"] + hurtbox["w"] - 4)
+        & (yy >= hurtbox["y"]) & (yy <= hurtbox["y"] + hurtbox["h"] - 2)
     )
     if mode == "forward_vfx":
-        strike_mask = (vfx | silver_blade) & (xx >= int(body_cx) - 2) & (~head_box)
+        strike_mask = (vfx | silver_blade) & (xx >= int(body_cx) - 2) & (~body_inner)
         if int(strike_mask.sum()) < 24:
-            strike_mask = (vfx | silver_blade | flame_slash) & (xx >= int(body_cx)) & (~head_box)
+            strike_mask = (vfx | silver_blade | flame_slash) & (xx >= int(body_cx)) & (~body_inner)
     elif mode == "aoe_nova":
-        strike_mask = (vfx | silver_blade) & (xx >= max(0, hurtbox["x"] - 10)) & (~head_box)
+        strike_mask = (vfx | silver_blade) & (xx >= max(0, hurtbox["x"] - 10)) & (~body_inner)
     else:
-        strike_mask = (vfx | (silver_blade & (xx >= int(body_cx) - 4))) & (~head_box)
+        strike_mask = (vfx | (silver_blade & (xx >= int(body_cx) - 4))) & (~body_inner)
 
     # Bridge tiny 2px pixel gaps inside a slash ribbon so one sweeping arc forms 1 clean hitbox (or 2 distinct multi-hit zones)
     merged = _dilate_mask(strike_mask, steps=2)

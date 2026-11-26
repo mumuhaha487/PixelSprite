@@ -1,7 +1,7 @@
 {
   "generator": "PixelSprite 2.3 (5-Dim Choreography + Purposeful Wide-Arena VFX + Auto Hitbox/Hurtbox + N+1 Closed-Loop)",
   "id": "ult_starfall_slash",
-  "name": "F·星炎流星坠地斩 (14帧奥义)",
+  "name": "F·星炎流星坠地斩 (18帧精密奥义)",
   "key": "ULT F",
   "cellSize": 96,
   "cellWidth": 96,
@@ -12,117 +12,95 @@
     71
   ],
   "anchorXRatio": 0.3125,
-  "frameCount": 14,
+  "frameCount": 18,
   "closedLoop": true,
   "ghostFrameExcluded": true,
   "auditGrid": [
     5,
-    3
+    4
   ],
   "timingMode": "hitstop",
   "frameDurationsMs": [
-    90,
     85,
-    190,
-    65,
-    160,
+    80,
+    185,
     60,
+    65,
+    165,
+    55,
     70,
+    75,
     275,
-    145,
+    105,
+    130,
     85,
-    85,
-    205,
-    85,
-    90
+    80,
+    200,
+    80,
+    80,
+    85
   ],
   "holdTags": {
     "3": "燃剑蓄力",
-    "5": "高空举剑定格",
-    "8": "贯地星炎爆发 HITSTOP",
-    "12": "收剑胜利定格"
+    "6": "高空举剑定格",
+    "10": "星炎爆发 HITSTOP",
+    "11": "拔剑蓄力",
+    "15": "持剑胜利定格"
   },
   "scrollSpeed": 0,
   "loopAudit": {
-    "activeCount": 14,
-    "ghostIndex": 15,
-    "fN_vs_ghost_iou": 0.96,
-    "fN_vs_ghost_rgb": 0.911,
-    "ghost_vs_f1_iou": 0.902,
-    "ghost_vs_f1_rgb": 0.8,
-    "fN_vs_f1_iou": 0.921,
-    "fN_vs_f1_rgb": 0.823,
-    "avg_step_iou": 0.537,
-    "max_body_dx_px": 4.52,
+    "activeCount": 18,
+    "ghostIndex": 19,
+    "fN_vs_ghost_iou": 0.89,
+    "fN_vs_ghost_rgb": 0.792,
+    "ghost_vs_f1_iou": 0.856,
+    "ghost_vs_f1_rgb": 0.734,
+    "fN_vs_f1_iou": 0.852,
+    "fN_vs_f1_rgb": 0.711,
+    "avg_step_iou": 0.54,
+    "max_body_dx_px": 6.19,
     "body_h_min_max": [
-      28,
-      40
+      30,
+      37
     ],
     "seam_smooth": false
   },
   "combatSummary": {
     "hasAttack": true,
-    "totalFrames": 14,
+    "totalFrames": 18,
     "startupFrames": [
       1,
       2,
       3,
       4,
-      5
-    ],
-    "activeFrames": [
+      5,
       6,
       7,
+      11
+    ],
+    "activeFrames": [
       8,
-      9
+      9,
+      10,
+      12
     ],
     "recoveryFrames": [
-      10,
-      11,
-      12,
       13,
-      14
+      14,
+      15,
+      16,
+      17,
+      18
     ],
-    "startupMs": 590,
+    "startupMs": 800,
     "activeMs": 550,
-    "recoveryMs": 550,
+    "recoveryMs": 610,
     "totalHitCount": 4,
-    "maxReachPx": 48
+    "maxReachPx": 53
   },
   "frameData": [
     {
       "frame": 1,
-      "durationMs": 90,
-      "phase": "startup",
-      "isAttackFrame": false,
-      "hitId": null,
-      "damage": 0,
-      "hitstopMs": 0,
-      "knockback": [
-        0.0,
-        0.0
-      ],
-      "label": "前摇",
-      "pivot": [
-        30,
-        71
-      ],
-      "hurtbox": {
-        "x": 15,
-        "y": 39,
-        "w": 30,
-        "h": 32,
-        "rel": [
-          -15,
-          -32,
-          30,
-          32
-        ]
-      },
-      "hitboxes": []
-    },
-    {
-      "frame": 2,
       "durationMs": 85,
       "phase": "startup",
       "isAttackFrame": false,
@@ -139,22 +117,22 @@
         71
       ],
       "hurtbox": {
-        "x": 19,
-        "y": 45,
-        "w": 27,
-        "h": 26,
+        "x": 16,
+        "y": 38,
+        "w": 28,
+        "h": 33,
         "rel": [
-          -11,
-          -26,
-          27,
-          26
+          -14,
+          -33,
+          28,
+          33
         ]
       },
       "hitboxes": []
     },
     {
-      "frame": 3,
-      "durationMs": 190,
+      "frame": 2,
+      "durationMs": 80,
       "phase": "startup",
       "isAttackFrame": false,
       "hitId": null,
@@ -170,21 +148,83 @@
         71
       ],
       "hurtbox": {
-        "x": 18,
-        "y": 44,
-        "w": 32,
-        "h": 28,
+        "x": 16,
+        "y": 42,
+        "w": 27,
+        "h": 29,
         "rel": [
-          -12,
-          -27,
-          32,
-          28
+          -14,
+          -29,
+          27,
+          29
+        ]
+      },
+      "hitboxes": []
+    },
+    {
+      "frame": 3,
+      "durationMs": 185,
+      "phase": "startup",
+      "isAttackFrame": false,
+      "hitId": null,
+      "damage": 0,
+      "hitstopMs": 0,
+      "knockback": [
+        0.0,
+        0.0
+      ],
+      "label": "前摇",
+      "pivot": [
+        30,
+        71
+      ],
+      "hurtbox": {
+        "x": 19,
+        "y": 43,
+        "w": 24,
+        "h": 31,
+        "rel": [
+          -11,
+          -28,
+          24,
+          31
         ]
       },
       "hitboxes": []
     },
     {
       "frame": 4,
+      "durationMs": 60,
+      "phase": "startup",
+      "isAttackFrame": false,
+      "hitId": null,
+      "damage": 0,
+      "hitstopMs": 0,
+      "knockback": [
+        0.0,
+        0.0
+      ],
+      "label": "前摇",
+      "pivot": [
+        30,
+        71
+      ],
+      "hurtbox": {
+        "x": 17,
+        "y": 31,
+        "w": 23,
+        "h": 32,
+        "rel": [
+          -13,
+          -40,
+          23,
+          32
+        ]
+      },
+      "hitboxes": []
+    },
+    {
+      "frame": 5,
       "durationMs": 65,
       "phase": "startup",
       "isAttackFrame": false,
@@ -201,22 +241,22 @@
         71
       ],
       "hurtbox": {
-        "x": 19,
-        "y": 23,
-        "w": 26,
-        "h": 38,
+        "x": 21,
+        "y": 26,
+        "w": 21,
+        "h": 31,
         "rel": [
-          -11,
-          -48,
-          26,
-          38
+          -9,
+          -45,
+          21,
+          31
         ]
       },
       "hitboxes": []
     },
     {
-      "frame": 5,
-      "durationMs": 160,
+      "frame": 6,
+      "durationMs": 165,
       "phase": "startup",
       "isAttackFrame": false,
       "hitId": null,
@@ -232,22 +272,53 @@
         71
       ],
       "hurtbox": {
-        "x": 12,
-        "y": 19,
-        "w": 31,
-        "h": 36,
+        "x": 13,
+        "y": 25,
+        "w": 30,
+        "h": 28,
         "rel": [
-          -18,
-          -52,
-          31,
-          36
+          -17,
+          -46,
+          30,
+          28
         ]
       },
       "hitboxes": []
     },
     {
-      "frame": 6,
-      "durationMs": 60,
+      "frame": 7,
+      "durationMs": 55,
+      "phase": "startup",
+      "isAttackFrame": false,
+      "hitId": null,
+      "damage": 0,
+      "hitstopMs": 0,
+      "knockback": [
+        0.0,
+        0.0
+      ],
+      "label": "前摇",
+      "pivot": [
+        30,
+        71
+      ],
+      "hurtbox": {
+        "x": 18,
+        "y": 26,
+        "w": 22,
+        "h": 29,
+        "rel": [
+          -12,
+          -45,
+          22,
+          29
+        ]
+      },
+      "hitboxes": []
+    },
+    {
+      "frame": 8,
+      "durationMs": 70,
       "phase": "active",
       "isAttackFrame": true,
       "hitId": 1,
@@ -263,37 +334,37 @@
         71
       ],
       "hurtbox": {
-        "x": 19,
-        "y": 28,
-        "w": 26,
-        "h": 31,
+        "x": 17,
+        "y": 30,
+        "w": 25,
+        "h": 29,
         "rel": [
-          -11,
-          -43,
-          26,
-          31
+          -13,
+          -41,
+          25,
+          29
         ]
       },
       "hitboxes": [
         {
-          "x": 31,
-          "y": 29,
-          "w": 36,
-          "h": 41,
+          "x": 37,
+          "y": 30,
+          "w": 26,
+          "h": 38,
           "rel": [
-            1,
-            -42,
-            36,
-            41
+            7,
+            -41,
+            26,
+            38
           ],
           "kind": "dive_slash",
-          "vfxCoveragePx": 493
+          "vfxCoveragePx": 467
         }
       ]
     },
     {
-      "frame": 7,
-      "durationMs": 70,
+      "frame": 9,
+      "durationMs": 75,
       "phase": "active",
       "isAttackFrame": true,
       "hitId": 2,
@@ -309,36 +380,36 @@
         71
       ],
       "hurtbox": {
-        "x": 17,
-        "y": 38,
-        "w": 24,
-        "h": 34,
+        "x": 19,
+        "y": 37,
+        "w": 21,
+        "h": 35,
         "rel": [
-          -13,
-          -33,
-          24,
-          34
+          -11,
+          -34,
+          21,
+          35
         ]
       },
       "hitboxes": [
         {
-          "x": 26,
-          "y": 29,
-          "w": 35,
-          "h": 44,
+          "x": 36,
+          "y": 38,
+          "w": 18,
+          "h": 34,
           "rel": [
-            -4,
-            -42,
-            35,
-            44
+            6,
+            -33,
+            18,
+            34
           ],
           "kind": "ground_slam",
-          "vfxCoveragePx": 342
+          "vfxCoveragePx": 212
         }
       ]
     },
     {
-      "frame": 8,
+      "frame": 10,
       "durationMs": 275,
       "phase": "active",
       "isAttackFrame": true,
@@ -355,115 +426,38 @@
         71
       ],
       "hurtbox": {
-        "x": 18,
-        "y": 41,
-        "w": 22,
-        "h": 31,
+        "x": 17,
+        "y": 39,
+        "w": 24,
+        "h": 32,
         "rel": [
-          -12,
-          -30,
-          22,
-          31
+          -13,
+          -32,
+          24,
+          32
         ]
       },
       "hitboxes": [
         {
           "x": 26,
-          "y": 30,
-          "w": 52,
-          "h": 43,
+          "y": 26,
+          "w": 50,
+          "h": 46,
           "rel": [
             -4,
-            -41,
-            52,
-            43
+            -45,
+            50,
+            46
           ],
           "kind": "aoe_nova",
-          "vfxCoveragePx": 994
+          "vfxCoveragePx": 1002
         }
       ]
-    },
-    {
-      "frame": 9,
-      "durationMs": 145,
-      "phase": "active",
-      "isAttackFrame": true,
-      "hitId": 4,
-      "damage": 26,
-      "hitstopMs": 70,
-      "knockback": [
-        7.5,
-        -4.0
-      ],
-      "label": "拔剑烈焰追击 HIT#4",
-      "pivot": [
-        30,
-        71
-      ],
-      "hurtbox": {
-        "x": 14,
-        "y": 40,
-        "w": 27,
-        "h": 31,
-        "rel": [
-          -16,
-          -31,
-          27,
-          31
-        ]
-      },
-      "hitboxes": [
-        {
-          "x": 38,
-          "y": 23,
-          "w": 29,
-          "h": 48,
-          "rel": [
-            8,
-            -48,
-            29,
-            48
-          ],
-          "kind": "flame_surge",
-          "vfxCoveragePx": 390
-        }
-      ]
-    },
-    {
-      "frame": 10,
-      "durationMs": 85,
-      "phase": "recovery",
-      "isAttackFrame": false,
-      "hitId": null,
-      "damage": 0,
-      "hitstopMs": 0,
-      "knockback": [
-        0.0,
-        0.0
-      ],
-      "label": "后摇",
-      "pivot": [
-        30,
-        71
-      ],
-      "hurtbox": {
-        "x": 14,
-        "y": 40,
-        "w": 27,
-        "h": 31,
-        "rel": [
-          -16,
-          -31,
-          27,
-          31
-        ]
-      },
-      "hitboxes": []
     },
     {
       "frame": 11,
-      "durationMs": 85,
-      "phase": "recovery",
+      "durationMs": 105,
+      "phase": "startup",
       "isAttackFrame": false,
       "hitId": null,
       "damage": 0,
@@ -472,55 +466,70 @@
         0.0,
         0.0
       ],
-      "label": "后摇",
+      "label": "前摇",
       "pivot": [
         30,
         71
       ],
       "hurtbox": {
-        "x": 16,
-        "y": 38,
-        "w": 27,
-        "h": 33,
+        "x": 17,
+        "y": 42,
+        "w": 51,
+        "h": 30,
         "rel": [
-          -14,
-          -33,
-          27,
-          33
+          -13,
+          -29,
+          51,
+          30
         ]
       },
       "hitboxes": []
     },
     {
       "frame": 12,
-      "durationMs": 205,
-      "phase": "recovery",
-      "isAttackFrame": false,
-      "hitId": null,
-      "damage": 0,
-      "hitstopMs": 0,
+      "durationMs": 130,
+      "phase": "active",
+      "isAttackFrame": true,
+      "hitId": 4,
+      "damage": 28,
+      "hitstopMs": 75,
       "knockback": [
-        0.0,
-        0.0
+        7.5,
+        -4.5
       ],
-      "label": "后摇",
+      "label": "拔剑烈焰上挑 HIT#4",
       "pivot": [
         30,
         71
       ],
       "hurtbox": {
-        "x": 14,
-        "y": 37,
-        "w": 29,
-        "h": 34,
+        "x": 9,
+        "y": 40,
+        "w": 27,
+        "h": 31,
         "rel": [
-          -16,
-          -34,
-          29,
-          34
+          -21,
+          -31,
+          27,
+          31
         ]
       },
-      "hitboxes": []
+      "hitboxes": [
+        {
+          "x": 22,
+          "y": 26,
+          "w": 61,
+          "h": 46,
+          "rel": [
+            -8,
+            -45,
+            61,
+            46
+          ],
+          "kind": "flame_surge",
+          "vfxCoveragePx": 814
+        }
+      ]
     },
     {
       "frame": 13,
@@ -540,12 +549,43 @@
         71
       ],
       "hurtbox": {
-        "x": 14,
+        "x": 16,
+        "y": 39,
+        "w": 28,
+        "h": 32,
+        "rel": [
+          -14,
+          -32,
+          28,
+          32
+        ]
+      },
+      "hitboxes": []
+    },
+    {
+      "frame": 14,
+      "durationMs": 80,
+      "phase": "recovery",
+      "isAttackFrame": false,
+      "hitId": null,
+      "damage": 0,
+      "hitstopMs": 0,
+      "knockback": [
+        0.0,
+        0.0
+      ],
+      "label": "后摇",
+      "pivot": [
+        30,
+        71
+      ],
+      "hurtbox": {
+        "x": 18,
         "y": 39,
         "w": 29,
         "h": 32,
         "rel": [
-          -16,
+          -12,
           -32,
           29,
           32
@@ -554,8 +594,101 @@
       "hitboxes": []
     },
     {
-      "frame": 14,
-      "durationMs": 90,
+      "frame": 15,
+      "durationMs": 200,
+      "phase": "recovery",
+      "isAttackFrame": false,
+      "hitId": null,
+      "damage": 0,
+      "hitstopMs": 0,
+      "knockback": [
+        0.0,
+        0.0
+      ],
+      "label": "后摇",
+      "pivot": [
+        30,
+        71
+      ],
+      "hurtbox": {
+        "x": 14,
+        "y": 38,
+        "w": 30,
+        "h": 33,
+        "rel": [
+          -16,
+          -33,
+          30,
+          33
+        ]
+      },
+      "hitboxes": []
+    },
+    {
+      "frame": 16,
+      "durationMs": 80,
+      "phase": "recovery",
+      "isAttackFrame": false,
+      "hitId": null,
+      "damage": 0,
+      "hitstopMs": 0,
+      "knockback": [
+        0.0,
+        0.0
+      ],
+      "label": "后摇",
+      "pivot": [
+        30,
+        71
+      ],
+      "hurtbox": {
+        "x": 18,
+        "y": 39,
+        "w": 27,
+        "h": 33,
+        "rel": [
+          -12,
+          -32,
+          27,
+          33
+        ]
+      },
+      "hitboxes": []
+    },
+    {
+      "frame": 17,
+      "durationMs": 80,
+      "phase": "recovery",
+      "isAttackFrame": false,
+      "hitId": null,
+      "damage": 0,
+      "hitstopMs": 0,
+      "knockback": [
+        0.0,
+        0.0
+      ],
+      "label": "后摇",
+      "pivot": [
+        30,
+        71
+      ],
+      "hurtbox": {
+        "x": 17,
+        "y": 39,
+        "w": 29,
+        "h": 33,
+        "rel": [
+          -13,
+          -32,
+          29,
+          33
+        ]
+      },
+      "hitboxes": []
+    },
+    {
+      "frame": 18,
+      "durationMs": 85,
       "phase": "recovery",
       "isAttackFrame": false,
       "hitId": null,
@@ -573,12 +706,12 @@
       "hurtbox": {
         "x": 14,
         "y": 39,
-        "w": 29,
+        "w": 30,
         "h": 32,
         "rel": [
           -16,
           -32,
-          29,
+          30,
           32
         ]
       },
@@ -605,7 +738,7 @@
     "#fca989",
     "#fd6659"
   ],
-  "stripFile": "anim_ult_starfall_slash_14f_96x80.png",
-  "ghostFile": "anim_ult_starfall_slash_14f_ghost_frame_96x80.png",
-  "framedataAuditFile": "anim_ult_starfall_slash_14f_framedata_audit_3x.png"
+  "stripFile": "anim_ult_starfall_slash_18f_96x80.png",
+  "ghostFile": "anim_ult_starfall_slash_18f_ghost_frame_96x80.png",
+  "framedataAuditFile": "anim_ult_starfall_slash_18f_framedata_audit_3x.png"
 }

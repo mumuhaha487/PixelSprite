@@ -1,6 +1,6 @@
 {
   "id": "skill_rising_uppercut",
-  "name": "Q·升龙上挑斩 (8帧示例模板)",
+  "name": "Q·升龙上挑斩 (8帧 6维骨骼衔接模板)",
   "key": "SKILL Q",
   "active_frames": 8,
   "closed_loop": true,
@@ -31,7 +31,7 @@
         "label": "起挑浮空 HIT#1"
       },
       "4": {
-        "hitId": 2,
+        "hitId": 1,
         "damage": 30,
         "hitstopMs": 150,
         "knockback": [3.5, -8.0],
@@ -42,14 +42,15 @@
     },
     "recovery_frames": [5, 6, 7, 8]
   },
-  "vfx_hint": "mega_arc_right",
+  "vfx_hint": "steel_horizontal_slash",
   "scroll_speed": 0,
   "view_prompt": "classic 2D side-scrolling 3/4 action RPG view, facing RIGHT consistently in every cell",
   "frame_choreography": [
     {
       "cell": 1,
       "role": "F1 STARTUP READY",
-      "torso": "Neutral upright stance matching Reference Image 1 anchored in left third",
+      "transition_from_prev": "Loop start neutral stance matching Master Anchor Reference Image 1",
+      "torso": "Neutral upright stance anchored in left third",
       "arms_weapon": "Right hand grips full silver sword at 35deg forward-up; left arm balanced at hip",
       "legs_feet": "Both boots planted shoulder-width apart on ground baseline",
       "secondary_motion": "Scarf gently flowing left; ponytail calm",
@@ -57,52 +58,58 @@
     },
     {
       "cell": 2,
-      "role": "F2 STARTUP LOW COIL HOLD",
+      "role": "F2 STARTUP LOW COIL HOLD (前摇蓄力)",
+      "transition_from_prev": "From F1 neutral, knees compress -3px downward while right elbow drops sword low behind right knee to coil upward sweep",
       "torso": "Deep low forward crouch (-3px) compressing torso to store upward spring energy, eyes locked up-right",
       "arms_weapon": "Right hand drops full silver sword low behind right knee pointing down-back (winding up for rising cut); left hand braces near chest",
       "legs_feet": "Both knees bent deeply in coiled crouch, front right heel and rear left toe pressed hard into floor",
       "secondary_motion": "Ponytail dips behind shoulders; scarf curls low",
-      "vfx_meaning": "TELEGRAPH VFX: Bright golden-orange flame spark igniting directly along the lowered blade edge + compact ground dust pressure ring under braced boots (signals upward launch attack!)"
+      "vfx_meaning": "TELEGRAPH VFX: Crisp golden-orange ember spark igniting strictly along the lowered blade edge + compact ground dust ring under braced boots"
     },
     {
       "cell": 3,
       "role": "F3 ACTIVE HIT#1 — EXPLOSIVE RISING SLASH",
+      "transition_from_prev": "From F2 low coil, rear leg pushes straight down launching body +6px off floor as right arm whips sword bottom-to-top across front",
       "torso": "Torso uncoils sharply upward-right lifting off ground (+6px airborne!) chest opening skyward",
       "arms_weapon": "Right arm whips silver sword violently bottom-to-top upward across front; left arm drives downward for counter-torque",
       "legs_feet": "Front right knee drives high upward leading leap; rear left leg extends straight downward pushing off floor",
       "secondary_motion": "Scarf & ponytail trail straight downward-left against upward leap",
-      "vfx_meaning": "ACTIVE LAUNCH VFX: Thick vertical-curving white-core -> flame-orange -> blazing crimson crescent trail sweeping strictly upward from the rising blade edge + ground launch dust erupting directly below her takeoff foot!"
+      "vfx_meaning": "ACTIVE LAUNCH VFX: Vertical-curving white-core -> flame-orange -> crimson crescent trail sweeping strictly upward from rising blade + ground takeoff dust below rear boot"
     },
     {
       "cell": 4,
-      "role": "F4 ACTIVE HIT#2 — APEX UPPERCUT HITSTOP",
+      "role": "F4 ACTIVE HIT#1 — APEX UPPERCUT HITSTOP",
+      "transition_from_prev": "Continues F3 upward leap & blade sweep to full airborne apex (+12px) and full overhead sword extension",
       "torso": "Airborne apex (+12px off ground!) stretched tall skyward in heroic rising silhouette",
       "arms_weapon": "Right arm extended fully overhead-right holding gleaming vertical silver sword at top of rising arc; left hand tucked back",
       "legs_feet": "Both boots clearly airborne — right knee tucked forward, left leg trailing cleanly down",
       "secondary_motion": "Scarf streams straight down-left; ponytail swept downward",
-      "vfx_meaning": "ACTIVE HITBOX CLIMAX VFX: Tall sweeping blazing flame-gold & crimson rising dragon-slash crescent arcing from floor level all the way above her raised blade tip + rising embers (visually matches the tall vertical anti-air Hitbox!)"
+      "vfx_meaning": "ACTIVE HITBOX CLIMAX VFX: Tall sweeping blazing flame-gold & crimson rising slash crescent arcing from floor level to overhead blade tip + rising embers"
     },
     {
       "cell": 5,
       "role": "F5 RECOVERY DESCENT",
-      "torso": "Gravity pulls body smoothly downward (+6px airborne), eyes checking landing spot",
+      "transition_from_prev": "Gravity pulls airborne body down +12px -> +6px while right wrist lowers blade smoothly toward mid-front",
+      "torso": "Controlled descent (+6px airborne), eyes watching landing spot",
       "arms_weapon": "Right wrist lowers silver sword calmly toward mid-front guard; left arm spreads for balance",
       "legs_feet": "Both legs extend smoothly downward preparing to touch floor",
       "secondary_motion": "Scarf floats upward-left trailing behind her descent",
-      "vfx_meaning": "DISSIPATION VFX: Flame crescent breaks into fading rising orange embers & cooling smoke wisps (clearly indicates active hitbox ended!)"
+      "vfx_meaning": "DISSIPATION VFX: Flame crescent breaks into fading rising orange embers & thin smoke wisps (signals active Hitbox ended!)"
     },
     {
       "cell": 6,
       "role": "F6 RECOVERY LANDING CUSHION",
+      "transition_from_prev": "Both boots touch ground baseline from F5 descent bending knees -2px to absorb impact",
       "torso": "Compact knee-bend landing cushion (-2px) smoothly absorbing touchdown",
       "arms_weapon": "Right hand steadies full silver sword forward at waist height",
       "legs_feet": "Both boots plant squarely back onto ground baseline with shock-absorbing bent knees",
       "secondary_motion": "Ponytail & scarf drop softly with landing inertia",
-      "vfx_meaning": "LANDING VFX: Small twin white-tan dust puffs kicking cleanly left and right from her landing boots"
+      "vfx_meaning": "LANDING VFX: Small twin white-tan dust puffs kicking cleanly left and right from landing boots"
     },
     {
       "cell": 7,
       "role": "F7 RECOVERY GUARD RETURN",
+      "transition_from_prev": "Knees straighten from F6 cushion lifting torso upright while right hand returns blade to 35deg guard",
       "torso": "Rising smoothly back to neutral upright height",
       "arms_weapon": "Right hand lifts full silver sword cleanly into 35deg neutral guard",
       "legs_feet": "Both boots settled in balanced shoulder-width neutral stance",
@@ -112,7 +119,8 @@
     {
       "cell": 8,
       "role": "F8 PRE-LOOP BRIDGE",
-      "torso": "95% identical to Cell 1 & Cell 9 — upright ready posture",
+      "transition_from_prev": "Micro-settle from F7 into 95% match with Cell 1 & Ghost Cell 9",
+      "torso": "Upright ready posture matching Cell 1",
       "arms_weapon": "Full silver sword held steady at exact 35deg Cell 1 angle",
       "legs_feet": "Both boots planted cleanly in exact Cell 1 stance",
       "secondary_motion": "Scarf & ponytail 95% identical to Cell 1",
@@ -121,6 +129,7 @@
     {
       "cell": 9,
       "role": "GHOST LOOP = F1",
+      "transition_from_prev": "100% identical to Cell 1 closed-loop anchor",
       "torso": "100% IDENTICAL TO CELL 1 — neutral upright stance in left third",
       "arms_weapon": "100% IDENTICAL TO CELL 1 — full silver sword at 35deg forward-up",
       "legs_feet": "100% IDENTICAL TO CELL 1 — both boots planted shoulder-width",
