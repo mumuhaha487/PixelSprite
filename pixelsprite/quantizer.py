@@ -650,10 +650,19 @@ def quantize_grid(
         max((cells[r * cols + c][3]["body_foot_y"] for c in range(cols) if cells[r * cols + c][3] is not None), default=rch * 0.85)
         for r in range(rows)
     ]
+    row_min_foot = [
+        min((cells[r * cols + c][3]["body_foot_y"] for c in range(cols) if cells[r * cols + c][3] is not None), default=rch * 0.85)
+        for r in range(rows)
+    ]
     global_max_foot = max(row_max_foot) if row_max_foot else rch * 0.85
-    grounded_floors = [f for f in row_max_foot if f >= global_max_foot - rch * 0.085]
+    # A row is grounded if its lowest boot is within 12% of global floor OR all cells in the row share a flat standing floor (<5% variance)!
+    is_grounded_row = [
+        (row_max_foot[r] >= global_max_foot - rch * 0.12) or ((row_max_foot[r] - row_min_foot[r]) < rch * 0.05)
+        for r in range(rows)
+    ]
+    grounded_floors = [row_max_foot[r] for r in range(rows) if is_grounded_row[r]]
     mean_grounded = float(np.mean(grounded_floors)) if grounded_floors else global_max_foot
-    row_ground_y = [f if f >= global_max_foot - rch * 0.085 else mean_grounded for f in row_max_foot]
+    row_ground_y = [row_max_foot[r] if is_grounded_row[r] else mean_grounded for r in range(rows)]
 
     f1_body_cx = cells[0][3]["body_cx"] if cells[0][3] is not None else (rcw * 0.30)
     dst_anchor_x = int(round(cell_w * anchor_x_ratio))

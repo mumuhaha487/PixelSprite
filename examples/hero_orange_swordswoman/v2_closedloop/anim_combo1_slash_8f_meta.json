@@ -1,7 +1,7 @@
 {
-  "generator": "PixelSprite 2.2 (Wide-Arena VFX + Auto Hitbox/Hurtbox Frame Data + N+1 Closed-Loop + Hitstop)",
+  "generator": "PixelSprite 2.3 (5-Dim Choreography + Purposeful Wide-Arena VFX + Auto Hitbox/Hurtbox + N+1 Closed-Loop)",
   "id": "combo1_slash",
-  "name": "普攻一式·烈风横斩 (8帧)",
+  "name": "普攻一式·拔剑横斩 (8帧)",
   "key": "ATK 1",
   "cellSize": 96,
   "cellWidth": 96,
@@ -22,33 +22,33 @@
   "timingMode": "hitstop",
   "frameDurationsMs": [
     90,
-    180,
+    185,
     55,
     225,
-    80,
+    85,
     80,
     85,
     90
   ],
   "holdTags": {
-    "2": "蓄力前摇",
-    "4": "横斩判定 HITSTOP"
+    "2": "回拉蓄力",
+    "4": "横斩命中 HITSTOP"
   },
   "scrollSpeed": 0,
   "loopAudit": {
     "activeCount": 8,
     "ghostIndex": 9,
-    "fN_vs_ghost_iou": 0.961,
-    "fN_vs_ghost_rgb": 0.921,
-    "ghost_vs_f1_iou": 0.916,
-    "ghost_vs_f1_rgb": 0.852,
-    "fN_vs_f1_iou": 0.93,
-    "fN_vs_f1_rgb": 0.868,
-    "avg_step_iou": 0.559,
-    "max_body_dx_px": 2.85,
+    "fN_vs_ghost_iou": 0.926,
+    "fN_vs_ghost_rgb": 0.848,
+    "ghost_vs_f1_iou": 0.821,
+    "ghost_vs_f1_rgb": 0.673,
+    "fN_vs_f1_iou": 0.871,
+    "fN_vs_f1_rgb": 0.748,
+    "avg_step_iou": 0.683,
+    "max_body_dx_px": 1.75,
     "body_h_min_max": [
-      33,
-      38
+      31,
+      35
     ],
     "seam_smooth": true
   },
@@ -69,11 +69,11 @@
       7,
       8
     ],
-    "startupMs": 270,
+    "startupMs": 275,
     "activeMs": 280,
-    "recoveryMs": 335,
+    "recoveryMs": 340,
     "totalHitCount": 1,
-    "maxReachPx": 65
+    "maxReachPx": 59
   },
   "frameData": [
     {
@@ -95,21 +95,21 @@
       ],
       "hurtbox": {
         "x": 15,
-        "y": 39,
-        "w": 29,
-        "h": 32,
+        "y": 38,
+        "w": 30,
+        "h": 33,
         "rel": [
           -15,
-          -32,
-          29,
-          32
+          -33,
+          30,
+          33
         ]
       },
       "hitboxes": []
     },
     {
       "frame": 2,
-      "durationMs": 180,
+      "durationMs": 185,
       "phase": "startup",
       "isAttackFrame": false,
       "hitId": null,
@@ -125,15 +125,15 @@
         71
       ],
       "hurtbox": {
-        "x": 14,
-        "y": 37,
-        "w": 33,
-        "h": 32,
+        "x": 16,
+        "y": 42,
+        "w": 28,
+        "h": 29,
         "rel": [
-          -16,
-          -34,
-          33,
-          32
+          -14,
+          -29,
+          28,
+          29
         ]
       },
       "hitboxes": []
@@ -150,37 +150,37 @@
         3.5,
         -0.5
       ],
-      "label": "瞬斩起效 HIT#1",
+      "label": "挥剑起效 HIT#1",
       "pivot": [
         30,
         71
       ],
       "hurtbox": {
-        "x": 15,
-        "y": 37,
-        "w": 40,
-        "h": 34,
+        "x": 17,
+        "y": 42,
+        "w": 31,
+        "h": 29,
         "rel": [
-          -15,
-          -34,
-          40,
-          34
+          -13,
+          -29,
+          31,
+          29
         ]
       },
       "hitboxes": [
         {
-          "x": 32,
-          "y": 24,
-          "w": 63,
-          "h": 46,
+          "x": 29,
+          "y": 51,
+          "w": 55,
+          "h": 17,
           "rel": [
-            2,
-            -47,
-            63,
-            46
+            -1,
+            -20,
+            55,
+            17
           ],
           "kind": "melee_arc",
-          "vfxCoveragePx": 1084
+          "vfxCoveragePx": 264
         }
       ]
     },
@@ -193,7 +193,7 @@
       "damage": 24,
       "hitstopMs": 140,
       "knockback": [
-        6.0,
+        6.5,
         -1.5
       ],
       "label": "烈风横斩 MAX",
@@ -202,37 +202,37 @@
         71
       ],
       "hurtbox": {
-        "x": 15,
-        "y": 36,
-        "w": 34,
-        "h": 36,
+        "x": 16,
+        "y": 42,
+        "w": 31,
+        "h": 29,
         "rel": [
-          -15,
-          -35,
-          34,
-          36
+          -14,
+          -29,
+          31,
+          29
         ]
       },
       "hitboxes": [
         {
-          "x": 30,
-          "y": 12,
-          "w": 65,
-          "h": 60,
+          "x": 28,
+          "y": 52,
+          "w": 61,
+          "h": 20,
           "rel": [
-            0,
-            -59,
-            65,
-            60
+            -2,
+            -19,
+            61,
+            20
           ],
           "kind": "melee_arc",
-          "vfxCoveragePx": 2235
+          "vfxCoveragePx": 349
         }
       ]
     },
     {
       "frame": 5,
-      "durationMs": 80,
+      "durationMs": 85,
       "phase": "recovery",
       "isAttackFrame": false,
       "hitId": null,
@@ -248,15 +248,15 @@
         71
       ],
       "hurtbox": {
-        "x": 16,
-        "y": 38,
-        "w": 33,
-        "h": 33,
+        "x": 17,
+        "y": 41,
+        "w": 27,
+        "h": 30,
         "rel": [
-          -14,
-          -33,
-          33,
-          33
+          -13,
+          -30,
+          27,
+          30
         ]
       },
       "hitboxes": []
@@ -279,15 +279,15 @@
         71
       ],
       "hurtbox": {
-        "x": 14,
-        "y": 38,
-        "w": 28,
-        "h": 33,
+        "x": 16,
+        "y": 40,
+        "w": 27,
+        "h": 31,
         "rel": [
-          -16,
-          -33,
-          28,
-          33
+          -14,
+          -31,
+          27,
+          31
         ]
       },
       "hitboxes": []
@@ -311,14 +311,14 @@
       ],
       "hurtbox": {
         "x": 15,
-        "y": 40,
+        "y": 39,
         "w": 29,
-        "h": 31,
+        "h": 32,
         "rel": [
           -15,
-          -31,
+          -32,
           29,
-          31
+          32
         ]
       },
       "hitboxes": []
@@ -342,14 +342,14 @@
       ],
       "hurtbox": {
         "x": 15,
-        "y": 40,
-        "w": 28,
-        "h": 31,
+        "y": 39,
+        "w": 29,
+        "h": 32,
         "rel": [
           -15,
-          -31,
-          28,
-          31
+          -32,
+          29,
+          32
         ]
       },
       "hitboxes": []

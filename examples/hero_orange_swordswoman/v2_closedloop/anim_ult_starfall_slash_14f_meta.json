@@ -1,7 +1,7 @@
 {
-  "generator": "PixelSprite 2.2 (Wide-Arena VFX + Auto Hitbox/Hurtbox Frame Data + N+1 Closed-Loop + Hitstop)",
+  "generator": "PixelSprite 2.3 (5-Dim Choreography + Purposeful Wide-Arena VFX + Auto Hitbox/Hurtbox + N+1 Closed-Loop)",
   "id": "ult_starfall_slash",
-  "name": "F·星陨次元斩 (14帧奥义)",
+  "name": "F·星炎流星坠地斩 (14帧奥义)",
   "key": "ULT F",
   "cellSize": 96,
   "cellWidth": 96,
@@ -23,42 +23,42 @@
   "frameDurationsMs": [
     90,
     85,
-    195,
+    190,
+    65,
+    160,
     60,
-    145,
-    55,
-    55,
+    70,
     275,
-    155,
-    75,
-    90,
-    215,
+    145,
+    85,
+    85,
+    205,
     85,
     90
   ],
   "holdTags": {
-    "3": "星阵蓄力",
-    "5": "浮空召唤",
-    "8": "次元星爆 HITSTOP",
+    "3": "燃剑蓄力",
+    "5": "高空举剑定格",
+    "8": "贯地星炎爆发 HITSTOP",
     "12": "收剑胜利定格"
   },
   "scrollSpeed": 0,
   "loopAudit": {
     "activeCount": 14,
     "ghostIndex": 15,
-    "fN_vs_ghost_iou": 0.852,
-    "fN_vs_ghost_rgb": 0.712,
-    "ghost_vs_f1_iou": 0.915,
-    "ghost_vs_f1_rgb": 0.83,
-    "fN_vs_f1_iou": 0.848,
-    "fN_vs_f1_rgb": 0.716,
-    "avg_step_iou": 0.514,
-    "max_body_dx_px": 3.24,
+    "fN_vs_ghost_iou": 0.96,
+    "fN_vs_ghost_rgb": 0.911,
+    "ghost_vs_f1_iou": 0.902,
+    "ghost_vs_f1_rgb": 0.8,
+    "fN_vs_f1_iou": 0.921,
+    "fN_vs_f1_rgb": 0.823,
+    "avg_step_iou": 0.537,
+    "max_body_dx_px": 4.52,
     "body_h_min_max": [
-      32,
+      28,
       40
     ],
-    "seam_smooth": true
+    "seam_smooth": false
   },
   "combatSummary": {
     "hasAttack": true,
@@ -67,10 +67,10 @@
       1,
       2,
       3,
-      4
+      4,
+      5
     ],
     "activeFrames": [
-      5,
       6,
       7,
       8,
@@ -83,11 +83,11 @@
       13,
       14
     ],
-    "startupMs": 430,
-    "activeMs": 685,
-    "recoveryMs": 555,
-    "totalHitCount": 5,
-    "maxReachPx": 64
+    "startupMs": 590,
+    "activeMs": 550,
+    "recoveryMs": 550,
+    "totalHitCount": 4,
+    "maxReachPx": 48
   },
   "frameData": [
     {
@@ -110,12 +110,12 @@
       "hurtbox": {
         "x": 15,
         "y": 39,
-        "w": 29,
+        "w": 30,
         "h": 32,
         "rel": [
           -15,
           -32,
-          29,
+          30,
           32
         ]
       },
@@ -139,22 +139,22 @@
         71
       ],
       "hurtbox": {
-        "x": 16,
-        "y": 39,
-        "w": 30,
-        "h": 31,
+        "x": 19,
+        "y": 45,
+        "w": 27,
+        "h": 26,
         "rel": [
-          -14,
-          -32,
-          30,
-          31
+          -11,
+          -26,
+          27,
+          26
         ]
       },
       "hitboxes": []
     },
     {
       "frame": 3,
-      "durationMs": 195,
+      "durationMs": 190,
       "phase": "startup",
       "isAttackFrame": false,
       "hitId": null,
@@ -170,22 +170,22 @@
         71
       ],
       "hurtbox": {
-        "x": 14,
-        "y": 38,
-        "w": 30,
-        "h": 32,
+        "x": 18,
+        "y": 44,
+        "w": 32,
+        "h": 28,
         "rel": [
-          -16,
-          -33,
-          30,
-          32
+          -12,
+          -27,
+          32,
+          28
         ]
       },
       "hitboxes": []
     },
     {
       "frame": 4,
-      "durationMs": 60,
+      "durationMs": 65,
       "phase": "startup",
       "isAttackFrame": false,
       "hitId": null,
@@ -201,14 +201,14 @@
         71
       ],
       "hurtbox": {
-        "x": 16,
-        "y": 7,
-        "w": 29,
+        "x": 19,
+        "y": 23,
+        "w": 26,
         "h": 38,
         "rel": [
-          -14,
-          -64,
-          29,
+          -11,
+          -48,
+          26,
           38
         ]
       },
@@ -216,139 +216,124 @@
     },
     {
       "frame": 5,
-      "durationMs": 145,
-      "phase": "active",
-      "isAttackFrame": true,
-      "hitId": 1,
-      "damage": 15,
-      "hitstopMs": 60,
+      "durationMs": 160,
+      "phase": "startup",
+      "isAttackFrame": false,
+      "hitId": null,
+      "damage": 0,
+      "hitstopMs": 0,
       "knockback": [
-        1.5,
-        -4.0
+        0.0,
+        0.0
       ],
-      "label": "星环震荡 HIT#1",
+      "label": "前摇",
       "pivot": [
         30,
         71
       ],
       "hurtbox": {
-        "x": 13,
-        "y": 13,
-        "w": 30,
+        "x": 12,
+        "y": 19,
+        "w": 31,
         "h": 36,
         "rel": [
-          -17,
-          -58,
-          30,
+          -18,
+          -52,
+          31,
           36
         ]
       },
-      "hitboxes": [
-        {
-          "x": 25,
-          "y": 1,
-          "w": 67,
-          "h": 62,
-          "rel": [
-            -5,
-            -70,
-            67,
-            62
-          ],
-          "kind": "star_halo",
-          "vfxCoveragePx": 2099
-        }
-      ]
+      "hitboxes": []
     },
     {
       "frame": 6,
-      "durationMs": 55,
+      "durationMs": 60,
       "phase": "active",
       "isAttackFrame": true,
-      "hitId": 2,
-      "damage": 22,
-      "hitstopMs": 55,
+      "hitId": 1,
+      "damage": 24,
+      "hitstopMs": 60,
       "knockback": [
-        3.0,
-        -2.0
+        4.0,
+        3.5
       ],
-      "label": "次元裂隙斩 HIT#2",
+      "label": "凌空陨落斜斩 HIT#1",
       "pivot": [
         30,
         71
       ],
       "hurtbox": {
-        "x": 14,
-        "y": 10,
-        "w": 29,
-        "h": 33,
+        "x": 19,
+        "y": 28,
+        "w": 26,
+        "h": 31,
         "rel": [
-          -16,
-          -61,
-          29,
-          33
+          -11,
+          -43,
+          26,
+          31
         ]
       },
       "hitboxes": [
         {
-          "x": 25,
-          "y": 1,
-          "w": 66,
-          "h": 77,
+          "x": 31,
+          "y": 29,
+          "w": 36,
+          "h": 41,
           "rel": [
-            -5,
-            -70,
-            66,
-            77
+            1,
+            -42,
+            36,
+            41
           ],
-          "kind": "rift_slash",
-          "vfxCoveragePx": 3213
+          "kind": "dive_slash",
+          "vfxCoveragePx": 493
         }
       ]
     },
     {
       "frame": 7,
-      "durationMs": 55,
+      "durationMs": 70,
       "phase": "active",
       "isAttackFrame": true,
-      "hitId": 3,
-      "damage": 24,
-      "hitstopMs": 55,
+      "hitId": 2,
+      "damage": 32,
+      "hitstopMs": 80,
       "knockback": [
-        3.5,
-        -2.0
+        5.0,
+        -3.0
       ],
-      "label": "星辉十字斩 HIT#3",
+      "label": "剑尖贯地重击 HIT#2",
       "pivot": [
         30,
         71
       ],
       "hurtbox": {
-        "x": 14,
-        "y": 11,
-        "w": 29,
-        "h": 32,
+        "x": 17,
+        "y": 38,
+        "w": 24,
+        "h": 34,
         "rel": [
-          -16,
-          -60,
-          29,
-          32
+          -13,
+          -33,
+          24,
+          34
         ]
       },
       "hitboxes": [
         {
-          "x": 25,
-          "y": 1,
-          "w": 67,
-          "h": 78,
+          "x": 26,
+          "y": 29,
+          "w": 35,
+          "h": 44,
           "rel": [
-            -5,
-            -70,
-            67,
-            78
+            -4,
+            -42,
+            35,
+            44
           ],
-          "kind": "rift_slash",
-          "vfxCoveragePx": 3400
+          "kind": "ground_slam",
+          "vfxCoveragePx": 342
         }
       ]
     },
@@ -357,158 +342,96 @@
       "durationMs": 275,
       "phase": "active",
       "isAttackFrame": true,
-      "hitId": 4,
+      "hitId": 3,
       "damage": 65,
       "hitstopMs": 220,
       "knockback": [
         12.0,
-        -5.0
+        -5.5
       ],
-      "label": "星陨次元大爆发 MAX",
+      "label": "星炎冲击波大爆发 MAX",
       "pivot": [
         30,
         71
       ],
       "hurtbox": {
-        "x": 16,
-        "y": 10,
-        "w": 25,
-        "h": 37,
+        "x": 18,
+        "y": 41,
+        "w": 22,
+        "h": 31,
         "rel": [
-          -14,
-          -61,
-          25,
-          37
+          -12,
+          -30,
+          22,
+          31
         ]
       },
       "hitboxes": [
         {
-          "x": 13,
-          "y": 1,
-          "w": 80,
-          "h": 78,
+          "x": 26,
+          "y": 30,
+          "w": 52,
+          "h": 43,
           "rel": [
-            -17,
-            -70,
-            80,
-            78
+            -4,
+            -41,
+            52,
+            43
           ],
           "kind": "aoe_nova",
-          "vfxCoveragePx": 4723
+          "vfxCoveragePx": 994
         }
       ]
     },
     {
       "frame": 9,
-      "durationMs": 155,
+      "durationMs": 145,
       "phase": "active",
       "isAttackFrame": true,
-      "hitId": 5,
-      "damage": 28,
-      "hitstopMs": 80,
+      "hitId": 4,
+      "damage": 26,
+      "hitstopMs": 70,
       "knockback": [
-        8.0,
-        2.0
+        7.5,
+        -4.0
       ],
-      "label": "星晶碎裂追加 HIT#5",
+      "label": "拔剑烈焰追击 HIT#4",
       "pivot": [
         30,
         71
       ],
       "hurtbox": {
-        "x": 16,
-        "y": 11,
-        "w": 28,
-        "h": 33,
+        "x": 14,
+        "y": 40,
+        "w": 27,
+        "h": 31,
         "rel": [
-          -14,
-          -60,
-          28,
-          33
+          -16,
+          -31,
+          27,
+          31
         ]
       },
       "hitboxes": [
         {
-          "x": 22,
-          "y": 1,
-          "w": 72,
-          "h": 77,
+          "x": 38,
+          "y": 23,
+          "w": 29,
+          "h": 48,
           "rel": [
-            -8,
-            -70,
-            72,
-            77
+            8,
+            -48,
+            29,
+            48
           ],
-          "kind": "star_shatter",
-          "vfxCoveragePx": 3289
+          "kind": "flame_surge",
+          "vfxCoveragePx": 390
         }
       ]
     },
     {
       "frame": 10,
-      "durationMs": 75,
-      "phase": "recovery",
-      "isAttackFrame": false,
-      "hitId": null,
-      "damage": 0,
-      "hitstopMs": 0,
-      "knockback": [
-        0.0,
-        0.0
-      ],
-      "label": "后摇",
-      "pivot": [
-        30,
-        71
-      ],
-      "hurtbox": {
-        "x": 16,
-        "y": 14,
-        "w": 27,
-        "h": 37,
-        "rel": [
-          -14,
-          -57,
-          27,
-          37
-        ]
-      },
-      "hitboxes": []
-    },
-    {
-      "frame": 11,
-      "durationMs": 90,
-      "phase": "recovery",
-      "isAttackFrame": false,
-      "hitId": null,
-      "damage": 0,
-      "hitstopMs": 0,
-      "knockback": [
-        0.0,
-        0.0
-      ],
-      "label": "后摇",
-      "pivot": [
-        30,
-        71
-      ],
-      "hurtbox": {
-        "x": 17,
-        "y": 41,
-        "w": 31,
-        "h": 30,
-        "rel": [
-          -13,
-          -30,
-          31,
-          30
-        ]
-      },
-      "hitboxes": []
-    },
-    {
-      "frame": 12,
-      "durationMs": 215,
+      "durationMs": 85,
       "phase": "recovery",
       "isAttackFrame": false,
       "hitId": null,
@@ -525,14 +448,76 @@
       ],
       "hurtbox": {
         "x": 14,
-        "y": 35,
-        "w": 32,
-        "h": 36,
+        "y": 40,
+        "w": 27,
+        "h": 31,
         "rel": [
           -16,
-          -36,
-          32,
-          36
+          -31,
+          27,
+          31
+        ]
+      },
+      "hitboxes": []
+    },
+    {
+      "frame": 11,
+      "durationMs": 85,
+      "phase": "recovery",
+      "isAttackFrame": false,
+      "hitId": null,
+      "damage": 0,
+      "hitstopMs": 0,
+      "knockback": [
+        0.0,
+        0.0
+      ],
+      "label": "后摇",
+      "pivot": [
+        30,
+        71
+      ],
+      "hurtbox": {
+        "x": 16,
+        "y": 38,
+        "w": 27,
+        "h": 33,
+        "rel": [
+          -14,
+          -33,
+          27,
+          33
+        ]
+      },
+      "hitboxes": []
+    },
+    {
+      "frame": 12,
+      "durationMs": 205,
+      "phase": "recovery",
+      "isAttackFrame": false,
+      "hitId": null,
+      "damage": 0,
+      "hitstopMs": 0,
+      "knockback": [
+        0.0,
+        0.0
+      ],
+      "label": "后摇",
+      "pivot": [
+        30,
+        71
+      ],
+      "hurtbox": {
+        "x": 14,
+        "y": 37,
+        "w": 29,
+        "h": 34,
+        "rel": [
+          -16,
+          -34,
+          29,
+          34
         ]
       },
       "hitboxes": []
@@ -556,14 +541,14 @@
       ],
       "hurtbox": {
         "x": 14,
-        "y": 38,
-        "w": 31,
-        "h": 33,
+        "y": 39,
+        "w": 29,
+        "h": 32,
         "rel": [
           -16,
-          -33,
-          31,
-          33
+          -32,
+          29,
+          32
         ]
       },
       "hitboxes": []
@@ -586,15 +571,15 @@
         71
       ],
       "hurtbox": {
-        "x": 13,
-        "y": 38,
-        "w": 30,
-        "h": 33,
+        "x": 14,
+        "y": 39,
+        "w": 29,
+        "h": 32,
         "rel": [
-          -17,
-          -33,
-          30,
-          33
+          -16,
+          -32,
+          29,
+          32
         ]
       },
       "hitboxes": []

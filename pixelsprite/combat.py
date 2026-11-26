@@ -129,17 +129,20 @@ def compute_active_hitboxes(
     kind = hit_cfg.get("kind", "melee_arc")
 
     xx = np.broadcast_to(np.arange(w)[None, :], (h, w))
+    yy = np.broadcast_to(np.arange(h)[:, None], (h, w))
+    # Exclude white eye/face specular pixels strictly inside the character's upper head box so face pixels never spawn a bogus hitbox!
+    head_box = (
+        (xx >= hurtbox["x"]) & (xx <= hurtbox["x"] + hurtbox["w"] - 2)
+        & (yy >= hurtbox["y"]) & (yy <= hurtbox["y"] + int(hurtbox["h"] * 0.62))
+    )
     if mode == "forward_vfx":
-        # Everything glowing/metallic from torso center rightward (ignores left speed-lines/afterimages!)
-        strike_mask = (vfx | silver_blade) & (xx >= int(body_cx) - 2)
+        strike_mask = (vfx | silver_blade) & (xx >= int(body_cx) - 2) & (~head_box)
         if int(strike_mask.sum()) < 24:
-            strike_mask = (vfx | silver_blade | flame_slash) & (xx >= int(body_cx))
+            strike_mask = (vfx | silver_blade | flame_slash) & (xx >= int(body_cx)) & (~head_box)
     elif mode == "aoe_nova":
-        # Massive nova/burst around & in front of character (exclude distant behind-back noise < body_x - 10)
-        strike_mask = (vfx | silver_blade) & (xx >= max(0, hurtbox["x"] - 10))
+        strike_mask = (vfx | silver_blade) & (xx >= max(0, hurtbox["x"] - 10)) & (~head_box)
     else:
-        # Full-vfx (e.g. spinning reverse crescent or surround shockwave!)
-        strike_mask = vfx | (silver_blade & (xx >= int(body_cx) - 4))
+        strike_mask = (vfx | (silver_blade & (xx >= int(body_cx) - 4))) & (~head_box)
 
     # Bridge tiny 2px pixel gaps inside a slash ribbon so one sweeping arc forms 1 clean hitbox (or 2 distinct multi-hit zones)
     merged = _dilate_mask(strike_mask, steps=2)

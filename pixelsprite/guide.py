@@ -130,6 +130,150 @@ def _draw_locomotion_skeleton(
     draw.line([hand_p, tip_p], fill=(248, 250, 252, 190), width=4)
 
 
+def _draw_combat_choreography_pose(
+    draw: ImageDraw.ImageDraw,
+    cx: int,
+    base_y: int,
+    oy0: int,
+    ox1: int,
+    sprite_h: int,
+    vfx_hint: str,
+    idx: int,
+) -> None:
+    """
+    Draw explicit pose, sword angle, and physically meaningful directional VFX vector cues
+    for every combat frame so GPT Image 2.6 renders unmistakable martial stances (back-swing,
+    uppercut, floor-chop, lance-thrust, hip-sheath, overhead meteor raise, ground-stab slam!)
+    instead of a static character next to random rainbow blobs!
+    """
+    # Per-frame (lift_ratio, crouch_ratio, lean_px, sword_start_rel, sword_end_rel)
+    lift_r = 0.0
+    crouch_r = 0.0
+    lean_px = 0
+    sw_angle_deg = -35.0  # 0=right, -90=straight up, +90=straight down, -145=behind head
+    sw_behind = False
+
+    if vfx_hint == "steel_horizontal_slash":
+        poses = {
+            1: (0.0, 0.10, -10, -145.0, True),   # F2: Back-swing behind head!
+            2: (0.0, 0.06,  14,  -15.0, False),  # F3: Mid horizontal sweep!
+            3: (0.0, 0.08,  18,   18.0, False),  # F4: Full horizontal follow-through!
+            4: (0.0, 0.04,  10,   30.0, False),  # F5: Low follow-through!
+            5: (0.0, 0.00,   2,  -25.0, False),  # F6: Rising to guard
+            6: (0.0, 0.00,   0,  -35.0, False),  # F7: Neutral guard
+            7: (0.0, 0.00,   0,  -35.0, False),  # F8: Pre-loop
+        }
+        lift_r, crouch_r, lean_px, sw_angle_deg, sw_behind = poses.get(idx, (0.0, 0.0, 0, -35.0, False))
+    elif vfx_hint == "iaido_three_cut_detonate":
+        poses = {
+            1: (0.0, 0.16,  12,  165.0, True),   # F2: Deep iaido crouch, sword pulled low-back at hip!
+            2: (0.0, 0.10,  22,  155.0, True),   # F3: Steep horizontal dash + cyan afterimage!
+            3: (0.04,-0.04, 10,  -75.0, False),  # F4: CUT 1 — High overhead uppercut!
+            4: (0.0, 0.14,  16,   62.0, False),  # F5: CUT 2 — Slamming sword down to floor!
+            5: (0.0, 0.10,  20,    0.0, False),  # F6: CUT 3 — Full horizontal lance thrust!
+            6: (0.0, 0.04,  -4,  150.0, True),   # F7: Reverse-grip hip pull-back (3 scars ignite!)
+            7: (0.0, 0.08,  -6,  155.0, True),   # F8: Cool hip-sheath finish (scars detonate!)
+            8: (0.0, 0.14,  -4,   12.0, False),  # F9: Low skid brake!
+            9: (0.0, 0.02,   0,  -25.0, False),  # F10: Rise to guard
+            10:(0.0, 0.00,   0,  -35.0, False),  # F11: Pre-loop
+        }
+        lift_r, crouch_r, lean_px, sw_angle_deg, sw_behind = poses.get(idx, (0.0, 0.0, 0, -35.0, False))
+    elif vfx_hint == "solar_meteor_ground_slam":
+        poses = {
+            1: (0.00, 0.14,  4,  -65.0, False),  # F2: Deep spring crouch, two-hand hilt
+            2: (0.00, 0.16,  4,  -55.0, False),  # F3: Blade ignition hold
+            3: (0.42, 0.00,  8,  -80.0, False),  # F4: Explosive vertical leap!
+            4: (0.58,-0.04, -6, -135.0, True),   # F5: High airborne arched TWO-HANDED OVERHEAD RAISE!
+            5: (0.36, 0.04, 18,   38.0, False),  # F6: Aerial diagonal meteor dive-slash!
+            6: (0.00, 0.18, 12,   82.0, False),  # F7: SWORD STABBED POINT-FIRST INTO FLOOR!
+            7: (0.00, 0.18, 10,   82.0, False),  # F8: Locked ground-stab pose + flame wave eruption!
+            8: (0.00, 0.02, 10,  -48.0, False),  # F9: Yank sword UP out of cracked floor!
+            9: (0.00, 0.00,  4,  -15.0, False),  # F10: Shake off embers
+            10:(0.00, 0.00,  0,  -40.0, False),  # F11: Clean blade rise
+            11:(0.00,-0.04,  0,  -62.0, False),  # F12: Heroic victory flourish!
+            12:(0.00, 0.00,  0,  -35.0, False),  # F13: Relax
+            13:(0.00, 0.00,  0,  -35.0, False),  # F14: Pre-loop
+        }
+        lift_r, crouch_r, lean_px, sw_angle_deg, sw_behind = poses.get(idx, (0.0, 0.0, 0, -35.0, False))
+
+    eff_h = int(sprite_h * (1.0 - crouch_r))
+    foot_y = base_y - int(round(lift_r * sprite_h))
+    head_r = int(sprite_h * 0.24)
+    head_cx = cx + lean_px
+    head_cy = foot_y - eff_h + head_r
+    bw = int(head_r * 0.72)
+
+    # Body contour
+    out_c = (56, 189, 248, 130)
+    draw.ellipse([head_cx - head_r, head_cy - head_r, head_cx + head_r, head_cy + head_r], outline=out_c, width=2)
+    draw.rounded_rectangle([head_cx - bw, head_cy + int(head_r * 0.7), head_cx + bw, foot_y], radius=10, outline=out_c, width=2)
+
+    # Explicit Sword Vector (thick bright white line so model obeys exact blade angle!)
+    hand_x = head_cx + (-10 if sw_behind else 18)
+    hand_y = head_cy + int(eff_h * 0.44)
+    rad = math.radians(sw_angle_deg)
+    blade_len = int(sprite_h * 0.52)
+    tip_x = hand_x + int(round(math.cos(rad) * blade_len))
+    tip_y = min(base_y, hand_y + int(round(math.sin(rad) * blade_len)))
+    draw.line([(hand_x, hand_y), (tip_x, tip_y)], fill=(255, 255, 255, 220), width=5)
+
+    # Purposeful directional VFX trajectory cues (100% matched to the martial stroke!)
+    rx0 = cx + bw + 10
+    rx1 = ox1 - 14
+    mid_y = (head_cy + base_y) // 2
+    x_cy = (oy0 + 28 + base_y - 16) // 2
+
+    if vfx_hint == "steel_horizontal_slash":
+        if idx == 1:
+            draw.ellipse([tip_x - 10, tip_y - 10, tip_x + 10, tip_y + 10], outline=(56, 232, 224, 180), width=2)
+        elif idx in (2, 3):
+            # Horizontal sweeping crescent strictly along horizontal swing plane!
+            draw.arc([cx - 8, head_cy - 6, rx1, base_y - 4], start=-38, end=38, fill=(56, 232, 224, 185), width=9 if idx == 3 else 6)
+            draw.line([(rx0, mid_y), (rx1 - 8, mid_y)], fill=(255, 255, 255, 130), width=3)
+    elif vfx_hint == "iaido_three_cut_detonate":
+        if idx == 2:
+            # Translucent cyan afterimage silhouette behind dashing torso
+            draw.ellipse([cx - 56 - head_r, head_cy - head_r, cx - 56 + head_r, head_cy + head_r], outline=(56, 232, 224, 135), width=2)
+        elif idx == 3:
+            # Cut 1: Upward sweeping bottom-left to top-right cyan arc!
+            draw.arc([cx, oy0 + 18, rx1, base_y - 6], start=-72, end=18, fill=(56, 232, 224, 185), width=9)
+        elif idx == 4:
+            # Cut 2: Downward sweeping top-right to floor cyan arc!
+            draw.arc([cx, oy0 + 24, rx1, base_y + 2], start=-25, end=68, fill=(56, 232, 224, 185), width=9)
+        elif idx == 5:
+            # Cut 3: Horizontal lance-beam straight out from sword tip!
+            draw.line([(tip_x, tip_y), (rx1, tip_y)], fill=(255, 255, 255, 195), width=8)
+            draw.ellipse([tip_x + 18, tip_y - 26, tip_x + 36, tip_y + 26], outline=(56, 232, 224, 175), width=3)
+        elif idx in (6, 7):
+            # 3 exact intersecting cut scars (up-diag + down-diag + horizontal!) igniting & detonating!
+            w_l = 8 if idx == 7 else 4
+            draw.line([(rx0 + 6, base_y - 16), (rx1 - 8, oy0 + 28)], fill=(56, 232, 224, 185), width=w_l)
+            draw.line([(rx0 + 6, oy0 + 28), (rx1 - 8, base_y - 16)], fill=(56, 232, 224, 185), width=w_l)
+            draw.line([(rx0, x_cy), (rx1, x_cy)], fill=(255, 255, 255, 195), width=w_l)
+            if idx == 7:
+                draw.ellipse([rx0 - 6, oy0 + 22, rx1, base_y - 8], outline=(165, 248, 255, 165), width=4)
+    elif vfx_hint == "solar_meteor_ground_slam":
+        if idx == 2:
+            draw.ellipse([cx - 38, base_y - 10, cx + 44, base_y + 8], outline=(255, 224, 71, 175), width=3)
+        elif idx == 3:
+            draw.ellipse([cx - 42, base_y - 12, cx + 42, base_y + 8], outline=(240, 230, 210, 155), width=3)
+        elif idx == 4:
+            # Radiant golden aura around raised overhead sword
+            draw.ellipse([tip_x - 24, tip_y - 24, tip_x + 24, tip_y + 24], outline=(255, 224, 71, 190), width=4)
+        elif idx == 5:
+            # Diagonal meteor dive-slash arcing overhead -> down-right!
+            draw.arc([cx - 10, oy0 + 16, rx1, base_y - 6], start=-75, end=52, fill=(251, 146, 60, 190), width=10)
+        elif idx in (6, 7):
+            # Ground-stab impact pillar & surging golden flame wave erupting from sword stab point!
+            draw.line([(tip_x, base_y), (tip_x, oy0 + 26)], fill=(255, 244, 186, 190), width=8)
+            if idx == 7:
+                draw.arc([tip_x - 20, oy0 + 18, rx1, base_y + 12], start=-115, end=0, fill=(251, 146, 60, 195), width=10)
+                draw.ellipse([tip_x - 32, base_y - 14, rx1, base_y + 10], outline=(255, 224, 71, 180), width=4)
+        elif idx == 8:
+            # Rising flame sweep off yanked-up sword
+            draw.arc([cx + 12, oy0 + 24, rx1, base_y - 4], start=-65, end=20, fill=(251, 182, 36, 175), width=8)
+
+
 def render_variable_action_guide(anim_spec: dict[str, Any], anchor_img: Image.Image | None = None) -> Image.Image:
     """
     Render a wide-arena grid guide (1536x1024 for combat skills / 1024x1024 for locomotion) with:
@@ -185,49 +329,15 @@ def render_variable_action_guide(anim_spec: dict[str, Any], anchor_img: Image.Im
             _draw_locomotion_skeleton(draw, cx, base_y, sprite_h, anim_spec["id"], idx, is_start or is_ghost)
         elif (is_start or is_ghost) and anchor_img is not None:
             _stamp_ghost_anchor(img, anchor_img, cx, base_y, sprite_h, alpha_scale=0.46)
+        elif vfx in ("steel_horizontal_slash", "iaido_three_cut_detonate", "solar_meteor_ground_slam"):
+            _draw_combat_choreography_pose(draw, cx, base_y, oy0, ox1, sprite_h, vfx, idx)
         else:
-            lift = 0
-            if vfx == "mega_ultimate" and 3 <= idx <= 9:
-                lift = int(math.sin(((idx - 2.5) / 7.5) * math.pi) * (cell_h * 0.23))
-
             head_r = int(sprite_h * 0.25)
-            foot_y = base_y - lift
+            foot_y = base_y
             head_cy = foot_y - sprite_h + head_r
             out_c = (74, 222, 128, 160) if (is_start or is_ghost) else (56, 189, 248, 120)
             draw.ellipse([cx - head_r, head_cy - head_r, cx + head_r, head_cy + head_r], outline=out_c, width=2)
             bw = int(head_r * 0.72)
             draw.rounded_rectangle([cx - bw, head_cy + int(head_r * 0.7), cx + bw, foot_y], radius=12, outline=out_c, width=2)
-
-            # Generous wide VFX composition cues filling the open right two-thirds!
-            rx0 = cx + bw + 4
-            rx1 = ox1 - 14
-            ry0 = max(oy0 + 18, foot_y - int(sprite_h * 1.45))
-            ry1 = min(base_y + 6, foot_y + 10)
-            if vfx == "mega_arc_right" and 2 <= idx <= 4:
-                draw.arc([cx - 8, ry0, rx1, ry1], start=-72, end=58, fill=(56, 232, 224, 165), width=10)
-                draw.arc([cx + 12, ry0 + 14, rx1 - 16, ry1 - 10], start=-65, end=50, fill=(255, 255, 255, 130), width=5)
-                draw.ellipse([cx - 46, base_y - 16, cx + 10, base_y + 6], outline=(230, 224, 210, 120), width=3)
-            elif vfx == "mega_flurry":
-                if idx == 1:
-                    draw.ellipse([cx - 50, base_y - 14, cx + 56, base_y + 10], outline=(56, 232, 224, 150), width=3)
-                elif idx == 2:
-                    draw.ellipse([cx - 64 - head_r, head_cy - head_r, cx - 64 + head_r, head_cy + head_r], outline=(56, 232, 224, 110), width=2)
-                elif 3 <= idx <= 7:
-                    draw.line([(rx0, ry0 + 6), (rx1, ry1 - 8)], fill=(255, 92, 188, 165), width=8)
-                    draw.line([(rx0, ry1 - 8), (rx1, ry0 + 6)], fill=(56, 232, 224, 165), width=8)
-                    if idx == 7:
-                        draw.ellipse([rx0 - 12, ry0 - 6, rx1, ry1], outline=(255, 224, 71, 175), width=5)
-            elif vfx == "mega_ultimate":
-                if idx == 2:
-                    draw.ellipse([cx - 56, base_y - 14, cx + 62, base_y + 10], outline=(255, 224, 71, 175), width=4)
-                elif idx == 3:
-                    draw.ellipse([cx - 44, base_y - 16, cx + 44, base_y + 8], outline=(255, 182, 36, 170), width=4)
-                elif 4 <= idx <= 8:
-                    draw.line([(rx0, oy0 + 18), (rx1, base_y - 10)], fill=(255, 92, 188, 165), width=9)
-                    draw.line([(rx0, base_y - 10), (rx1, oy0 + 18)], fill=(255, 224, 71, 165), width=9)
-                    if idx == 7:
-                        draw.ellipse([rx0 - 16, oy0 + 14, rx1, base_y - 6], outline=(56, 232, 224, 180), width=6)
-                elif idx == 10:
-                    draw.ellipse([cx - 64, base_y - 14, cx + 68, base_y + 8], outline=(240, 230, 210, 150), width=3)
 
     return img
