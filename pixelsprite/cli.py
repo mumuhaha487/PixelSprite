@@ -17,6 +17,7 @@ from .presets import (
     compile_anchor_prompt,
     compile_variable_action_prompt,
     load_animation_spec,
+    validate_choreography,
 )
 from .quantizer import (
     audit_closed_loop,
@@ -51,14 +52,29 @@ def cmd_list(_args: argparse.Namespace) -> int:
     print("=== Pixel Styles ===")
     for k, v in PIXEL_STYLES.items():
         print(f"  {k:12s} | cell={v['cell_w']}x{v['cell_h']} | charH={v['char_height_px']}px | colors={v['palette_colors']} | {v['label']}")
-    print("\n=== v2.2 Wide-Arena Closed-Loop Variable-Length Animations + Combat Attack Frames ===")
+    print("\n=== v2.3 Wide-Arena Closed-Loop Variable-Length Animations + 5-Dim Choreography & Combat Hitboxes ===")
     for k, a in ANIMATION_SPECS.items():
         g = f"{a['grid'][0]}x{a['grid'][1]} ({a['api_size']})"
         total_ms = sum(a["frame_durations_ms"])
         act_f = sorted(a.get("combat", {}).get("active_frames", {}).keys())
         atk_str = f"ACTIVE={act_f}" if act_f else "LOCOMOTION"
-        print(f"  {k:22s} | {a['active_frames']:2d}+1f | {g:16s} | {total_ms:4d}ms | {atk_str}")
+        v = validate_choreography(a)
+        c_tag = "5-DIM OK" if v["ok"] else "WARN"
+        print(f"  {k:22s} | {a['active_frames']:2d}+1f | {g:16s} | {total_ms:4d}ms | {c_tag:8s} | {atk_str}")
     return 0
+
+
+def cmd_validate(args: argparse.Namespace) -> int:
+    """Validate that an animation spec strictly defines 5-dimension per-frame choreography (no vague prompts!)."""
+    anim = load_animation_spec(args.anim)
+    res = validate_choreography(anim)
+    if res["ok"]:
+        print(f"[CHOREOGRAPHY PASS] '{anim['id']}' defines complete 5-dimension choreography for all {res['frameCount']} cells (torso, arms_weapon, legs_feet, secondary_motion, vfx_meaning).")
+        return 0
+    print(f"[CHOREOGRAPHY FAIL] '{anim['id']}' has {len(res['issues'])} specification issue(s):")
+    for iss in res["issues"]:
+        print(f"  - {iss}")
+    return 1
 
 
 def cmd_anchor(args: argparse.Namespace) -> int:
@@ -151,7 +167,7 @@ def _export_action_outputs(
         ghost_frame.save(out_dir / ghost_file)
 
     meta = {
-        "generator": "PixelSprite 2.2 (Wide-Arena VFX + Auto Hitbox/Hurtbox Frame Data + N+1 Closed-Loop + Hitstop)",
+        "generator": "PixelSprite 2.3 (5-Dim Choreography + Purposeful Wide-Arena VFX + Auto Hitbox/Hurtbox + N+1 Closed-Loop)",
         "id": anim["id"],
         "name": anim["name"],
         "key": anim.get("key", anim["id"].upper()),
@@ -191,6 +207,13 @@ def cmd_action(args: argparse.Namespace) -> int:
     char_h = args.char_height or style["char_height_px"]
     colors = args.colors or style["palette_colors"]
     anim = load_animation_spec(args.anim)
+    chk = validate_choreography(anim)
+    if not chk["ok"]:
+        print(f"[CHOREOGRAPHY WARN] '{anim['id']}' is missing detailed 5-dimension per-frame choreography:")
+        for iss in chk["issues"][:5]:
+            print(f"  - {iss}")
+        if args.strict_choreography:
+            raise ValueError("Aborted due to --strict-choreography. Author detailed torso/arms/legs/secondary/vfx specs first!")
 
     cols, rows = anim["grid"]
     api_size = anim.get("api_size", "1536x1024")
@@ -344,7 +367,8 @@ def cmd_all(args: argparse.Namespace) -> int:
             style=args.style, cell=args.cell, cell_w=args.cell_w, cell_h=args.cell_h,
             char_height=args.char_height, colors=args.colors,
             inset=args.inset, no_palette_lock=args.no_palette_lock, no_outline=args.no_outline,
-            requantize_only=args.requantize_only, api_url=args.api_url, api_key=args.api_key, model=args.model,
+            requantize_only=args.requantize_only, strict_choreography=False,
+            api_url=args.api_url, api_key=args.api_key, model=args.model,
         ))
         metas.append(str(out_dir / f"{prefix}_meta.json"))
 
@@ -356,7 +380,11 @@ def cmd_all(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="pixelsprite", description="PixelSprite v2.2 — Wide-Arena VFX, Auto Combat Hitboxes/Attack Frames & Closed-Loop Pipeline")
     sub = p.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("list", help="List styles, wide-arena specs, and combat attack frames").set_defaults(func=cmd_list)
+    sub.add_parser("list", help="List styles, wide-arena specs, 5-dim choreography status & attack frames").set_defaults(func=cmd_list)
+
+    sp_val = sub.add_parser("validate", help="Validate that an action JSON defines complete 5-dim per-frame choreography")
+    sp_val.add_argument("anim", help="Built-in animation id or path to custom animation JSON")
+    sp_val.set_defaults(func=cmd_validate)
 
     def add_api(sp):
         sp.add_argument("--api-url", default=None)
@@ -388,6 +416,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp_act.add_argument("--inset", type=float, default=2.2)
     sp_act.add_argument("--no-palette-lock", action="store_true")
     sp_act.add_argument("--requantize-only", action="store_true")
+    sp_act.add_argument("--strict-choreography", action="store_true", help="Abort if spec lacks 5-dimension per-frame choreography")
     add_quant(sp_act); add_api(sp_act)
     sp_act.set_defaults(func=cmd_action)
 
