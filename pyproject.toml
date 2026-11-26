@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pixelsprite"
+version = "1.0.0"
+description = "AI-native 16-bit chunky low-res pixel art 8x8 (64-frame) sprite sheet & flashy combat skill pipeline for GPT Image 2.6"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "pillow>=10.0.0",
+  "numpy>=1.24.0",
+]
+
+[project.scripts]
+pixelsprite = "pixelsprite.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["pixelsprite*"]

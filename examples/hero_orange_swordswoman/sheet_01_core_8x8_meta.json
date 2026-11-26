@@ -1,0 +1,106 @@
+{
+  "generator": "PixelSprite 1.0",
+  "moduleId": "sheet_01_core_8x8",
+  "moduleName": "Core Actions & 3-Hit Combo 8x8 (64 frames)",
+  "moduleNameZh": "核心动作与三连剑技 8×8（64帧）",
+  "charDesc": "元气橘发高马尾少女勇者，系着飘逸红色围巾，穿青绿色镶金短风衣、深棕色短靴，手持亮银色短剑，大眼睛 Q 版二头身比例",
+  "cellSize": 48,
+  "cols": 8,
+  "rows": 8,
+  "sheetWidth": 384,
+  "sheetHeight": 384,
+  "palette": [
+    "#230e24",
+    "#fd6922",
+    "#ec263d",
+    "#c33325",
+    "#fdcc43",
+    "#fdd2b2",
+    "#fdfcfd",
+    "#9c1433",
+    "#7d443a",
+    "#297976",
+    "#f8a425",
+    "#244754",
+    "#9994ac",
+    "#581325",
+    "#fcf6d6",
+    "#572d31",
+    "#fca989",
+    "#fd6659"
+  ],
+  "animations": [
+    {
+      "row": 0,
+      "id": "idle",
+      "name": "待机 Idle",
+      "key": "IDLE",
+      "fps": 8,
+      "frameCount": 8,
+      "y": 0
+    },
+    {
+      "row": 1,
+      "id": "walk",
+      "name": "行走 Walk",
+      "key": "WALK",
+      "fps": 10,
+      "frameCount": 8,
+      "y": 48
+    },
+    {
+      "row": 2,
+      "id": "run",
+      "name": "疾跑 Run",
+      "key": "RUN",
+      "fps": 12,
+      "frameCount": 8,
+      "y": 96
+    },
+    {
+      "row": 3,
+      "id": "combo1_slash",
+      "name": "普攻一式·横斩",
+      "key": "ATK 1",
+      "fps": 13,
+      "frameCount": 8,
+      "y": 144
+    },
+    {
+      "row": 4,
+      "id": "combo2_uppercut",
+      "name": "普攻二式·上挑斩",
+      "key": "ATK 2",
+      "fps": 13,
+      "frameCount": 8,
+      "y": 192
+    },
+    {
+      "row": 5,
+      "id": "combo3_spin_cleave",
+      "name": "普攻三式·跳劈旋斩",
+      "key": "ATK 3",
+      "fps": 13,
+      "frameCount": 8,
+      "y": 240
+    },
+    {
+      "row": 6,
+      "id": "jump_dash",
+      "name": "跳跃冲刺 Jump",
+      "key": "JUMP",
+      "fps": 11,
+      "frameCount": 8,
+      "y": 288
+    },
+    {
+      "row": 7,
+      "id": "hurt_ko",
+      "name": "受击倒地 Hurt/KO",
+      "key": "HURT",
+      "fps": 9,
+      "frameCount": 8,
+      "y": 336
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+# Secrets & local API credentials (NEVER commit!)
+.env
+.env.*
+env.txt
+*.key
+*.pem
+
+# Python caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+
+# Local raw intermediates & scratch work
+_raw_cache/
+work/
+tmp/
+*.tmp
+.DS_Store
+Thumbs.db

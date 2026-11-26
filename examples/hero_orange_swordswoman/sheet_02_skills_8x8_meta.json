@@ -1,0 +1,106 @@
+{
+  "generator": "PixelSprite 1.0",
+  "moduleId": "sheet_02_skills_8x8",
+  "moduleName": "Flashy ARPG Skills & Ultimates 8x8 (64 frames)",
+  "moduleNameZh": "炫酷技能与终极奥义 8×8（64帧）",
+  "charDesc": "元气橘发高马尾少女勇者",
+  "cellSize": 48,
+  "cols": 8,
+  "rows": 8,
+  "sheetWidth": 384,
+  "sheetHeight": 384,
+  "palette": [
+    "#230e24",
+    "#fd6922",
+    "#ec263d",
+    "#c33325",
+    "#fdcc43",
+    "#fdd2b2",
+    "#fdfcfd",
+    "#9c1433",
+    "#7d443a",
+    "#297976",
+    "#f8a425",
+    "#244754",
+    "#9994ac",
+    "#581325",
+    "#fcf6d6",
+    "#572d31",
+    "#fca989",
+    "#fd6659"
+  ],
+  "animations": [
+    {
+      "row": 0,
+      "id": "skill_iaido_blink",
+      "name": "Q·居合瞬闪斩",
+      "key": "SKILL Q",
+      "fps": 14,
+      "frameCount": 8,
+      "y": 0
+    },
+    {
+      "row": 1,
+      "id": "skill_flame_wave",
+      "name": "W·烈焰剑气波",
+      "key": "SKILL W",
+      "fps": 13,
+      "frameCount": 8,
+      "y": 48
+    },
+    {
+      "row": 2,
+      "id": "skill_ice_rain",
+      "name": "E·冰晶剑雨阵",
+      "key": "SKILL E",
+      "fps": 12,
+      "frameCount": 8,
+      "y": 96
+    },
+    {
+      "row": 3,
+      "id": "skill_phantom_flurry",
+      "name": "R·幻影五连乱舞",
+      "key": "SKILL R",
+      "fps": 15,
+      "frameCount": 8,
+      "y": 144
+    },
+    {
+      "row": 4,
+      "id": "skill_thunder_drop",
+      "name": "A·雷霆天降落雷",
+      "key": "SKILL A",
+      "fps": 13,
+      "frameCount": 8,
+      "y": 192
+    },
+    {
+      "row": 5,
+      "id": "skill_parry_counter",
+      "name": "S·圣盾格挡反击",
+      "key": "SKILL S",
+      "fps": 13,
+      "frameCount": 8,
+      "y": 240
+    },
+    {
+      "row": 6,
+      "id": "skill_aura_burst",
+      "name": "D·剑意觉醒爆气",
+      "key": "BUFF D",
+      "fps": 12,
+      "frameCount": 8,
+      "y": 288
+    },
+    {
+      "row": 7,
+      "id": "ult_starfall_slash",
+      "name": "F·终极奥义·星陨次元斩",
+      "key": "ULT F",
+      "fps": 14,
+      "frameCount": 8,
+      "y": 336
+    }
+  ]
+}
