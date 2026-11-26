@@ -1,0 +1,68 @@
+{
+  "generator": "PixelSprite 2.1 (Body-Isolated Closed-Loop + Variable-Length + Hitstop)",
+  "id": "walk",
+  "name": "行走 Walk (8帧)",
+  "key": "WALK",
+  "cellSize": 64,
+  "charHeightPx": 34,
+  "anchorXRatio": 0.48,
+  "frameCount": 8,
+  "closedLoop": true,
+  "ghostFrameExcluded": true,
+  "auditGrid": [
+    3,
+    3
+  ],
+  "timingMode": "even",
+  "frameDurationsMs": [
+    95,
+    95,
+    95,
+    95,
+    95,
+    95,
+    95,
+    95
+  ],
+  "holdTags": {},
+  "scrollSpeed": 115,
+  "loopAudit": {
+    "activeCount": 8,
+    "ghostIndex": 9,
+    "fN_vs_ghost_iou": 0.886,
+    "fN_vs_ghost_rgb": 0.788,
+    "ghost_vs_f1_iou": 0.972,
+    "ghost_vs_f1_rgb": 0.938,
+    "fN_vs_f1_iou": 0.887,
+    "fN_vs_f1_rgb": 0.802,
+    "avg_step_iou": 0.774,
+    "max_body_dx_px": 1.01,
+    "body_h_min_max": [
+      32,
+      35
+    ],
+    "seam_smooth": true
+  },
+  "palette": [
+    "#230e24",
+    "#fd6922",
+    "#ec263d",
+    "#c33325",
+    "#fdcc43",
+    "#fdd2b2",
+    "#fdfcfd",
+    "#9c1433",
+    "#7d443a",
+    "#297976",
+    "#f8a425",
+    "#244754",
+    "#9994ac",
+    "#581325",
+    "#fcf6d6",
+    "#572d31",
+    "#fca989",
+    "#fd6659"
+  ],
+  "stripFile": "anim_walk_8f_64px.png",
+  "ghostFile": "anim_walk_8f_ghost_frame_64px.png"
+}
